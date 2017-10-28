@@ -37,3 +37,10 @@
 // L9958 Enable for all 6 motors
 #define ENABLE_MOTORS1 24
 #define ENABLE_MOTORS2 25
+
+// Enum defining direction in which actuators move
+typedef enum MotorDirection
+{
+	RETRACT = 0,
+	EXTEND = 1
+};

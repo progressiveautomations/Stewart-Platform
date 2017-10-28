@@ -6,7 +6,7 @@ int PWM[NUM_MOTORS];
 int MaxMotorPWM;
 
 //Initialize direction value variables
-boolean Direction[NUM_MOTORS];
+MotorDirection Direction[NUM_MOTORS];
 
 //Initialize position value variables
 int Position[NUM_MOTORS];
@@ -83,9 +83,11 @@ void setup() {
 	pinMode(ENABLE_MOTORS1, OUTPUT); digitalWrite(ENABLE_MOTORS1, HIGH); // HIGH = disabled
 	pinMode(ENABLE_MOTORS2, OUTPUT); digitalWrite(ENABLE_MOTORS2, HIGH); // HIGH = disabled
 
+	// SPI stuff
+	// See: https://www.arduino.cc/en/Reference/SPI
 	SPI.begin();
 	SPI.setBitOrder(LSBFIRST);
-	SPI.setDataMode(SPI_MODE1); // clock pol = low, phase = high
+	SPI.setDataMode(SPI_MODE1); // clock polarity = low, phase = high
 
 	// Motor 1
 	digitalWrite(SlaveSelectPinMotor1, LOW);
@@ -192,14 +194,14 @@ void loop() {
 
 			// If extended further than desired (?)
 			if (Position[MotorCounter] > DesiredPosition[MotorCounter]) {
-				Direction[MotorCounter] = 0; // Is 0 retracting? WHY NOT FALSE
+				Direction[MotorCounter] = RETRACT;
 				PWM[MotorCounter] = abs(Position[MotorCounter] - DesiredPosition[MotorCounter]);
 				PWM[MotorCounter] = 100; // Override with 100??
 			}
 
 			// Retracted further than desired????
 			else if (Position[MotorCounter] < DesiredPosition[MotorCounter]) {
-				Direction[MotorCounter] = 1; // Is 1 extending??????? WHY DAFUQ DON'T YOU USE TRUE
+				Direction[MotorCounter] = EXTEND;
 				PWM[MotorCounter] = abs(Position[MotorCounter] - DesiredPosition[MotorCounter]);
 				PWM[MotorCounter] = 100;
 			}
@@ -227,6 +229,7 @@ void loop() {
 	digitalWrite(DirectionPinMotor6, Direction[5]); analogWrite(PWMPinMotor6, PWM[5]);
 }
 
+// Triggered when data comes into RX
 void serialEvent() {
 	//Test Manual Control Mode
 	for (MotorCounter = 0; MotorCounter <= NUM_MOTORS - 1; MotorCounter++) {
