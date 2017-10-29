@@ -10,8 +10,8 @@ MotorDirection Direction[NUM_MOTORS];
 
 //Initialize position value variables
 int Position[NUM_MOTORS];
-int ZeroPosition[NUM_MOTORS] = { 0, 200, 192, 191, 194, 200 }; //Actuator #1 does not currently work and needs to be retested
-int MaxPosition[NUM_MOTORS] = { 1024, 822, 821, 825, 826, 829 }; //Actuator #1 does not currently work
+int ZeroPosition[NUM_MOTORS] = { 0, 200, 192, 191, 194, 200 };
+int MaxPosition[NUM_MOTORS] = { 1024, 822, 821, 825, 826, 829 };
 
 //Initialize desired position value variables												
 int DesiredPosition[NUM_MOTORS];
@@ -141,12 +141,125 @@ void setup() {
 
 	//calculate actuator lengths
 
-	Serial.begin(9600);
+	Serial.begin(19200);
 	Serial.println("Begin");
+	ResetToZero();
+	delay(4000);
 }
 
 void loop() {
+	NormalOp();
+	/*
+	int motor = 6;
+	ExtendOne(motor);
+	delay(2000);
+	RetractOne(motor);
+	delay(2000);*/
+}
 
+// Triggered when data comes into RX
+// example data: -0,20,40,60,80,100+ 
+// packet begins with '-', ends with '+'
+// comma delimited
+void serialEvent() {
+	const char start_char = '-';
+	const char sentinel_char = '+';
+	const char delimiter_char = ',';
+
+	//Test Manual Control Mode
+	for (MotorCounter = 0; MotorCounter < NUM_MOTORS; MotorCounter++) {
+		CorrectPosition[MotorCounter] = 0;
+	}
+
+	// max size: 4 bytes per position (6 digits), 7 more bytes for delimiters (commas + ends)
+	// so 31 bytes
+	if (Serial.available() >= 31) {
+		String inString = "";
+		char inChar;
+		bool start_found = false;
+		bool end_found = false;
+
+		IndexSerialInput = 0;
+		while (Serial.available() > 0) {
+			inChar = Serial.read();
+
+			// don't parse until we find our starting char
+			if (!start_found  && inChar != start_char)
+			{
+				continue;
+			}
+			else
+			{
+				start_found = true;
+			}
+
+			if (isDigit(inChar)) {
+				inString += inChar;
+			}
+
+			// Parse individual int, delimited by ',' or EOL
+			if (inChar == delimiter_char || inChar == sentinel_char) {
+				InputArray[IndexSerialInput] = inString.toInt();
+				IndexSerialInput++;
+				inString = "";
+			}
+
+			// if sentinel, break out
+			if (start_found  && inChar == sentinel_char)
+			{
+				end_found = true;
+				break;
+			}
+
+			// invalid char
+			if (inChar != delimiter_char && inChar != start_char && inChar != sentinel_char && !isDigit(inChar)) {
+				Serial.print("Invalid data due to character with ascii code: ");
+				Serial.println(inChar);
+				return;
+			}
+		}
+
+		// validate only if start and end chars found
+		if (start_char && end_found)
+		{
+			// validate and print input array (why not do it in above loop and save a few cycles)
+			for (int i = 0; i < sizeof(InputArray) / sizeof(InputArray[0]); i++) {
+				if (InputArray[i] > 1023 || InputArray[i] < 0) {
+					Serial.println("Invalid data due to Position set outside of range [0,1023]");
+					Serial.print("Value of invalid data was: ");
+					Serial.println(InputArray[i]);
+					Serial.flush(); // "waits until transmission of outgoing data complete"
+					return;
+				}
+			}
+
+			// LEAP controller Mode
+			// if (Serial.available() >= MotorNumber)
+			// {
+			// Serial.readBytes(InputArray, MotorNumber);
+			//
+			// for (int i = 0; i<=5; i++)
+			// {
+			// InputArray[i] = 4*InputArray[i];
+			// }
+
+			for (int i = 0; i < NUM_MOTORS; i++)
+			{
+				DesiredPosition[i] = InputArray[i];
+			}
+			//DesiredPosition[0] = InputArray[0];
+			//DesiredPosition[1] = InputArray[1];
+			//DesiredPosition[2] = InputArray[2];
+			//DesiredPosition[3] = InputArray[3];
+			//DesiredPosition[4] = InputArray[4];
+			//DesiredPosition[5] = InputArray[5];
+		}
+		Serial.flush();
+	}
+}
+
+void NormalOp()
+{
 	// Read potentiometer positions
 	Position[0] = analogRead(PotentiometerPinMotor1);
 	Position[1] = analogRead(PotentiometerPinMotor2);
@@ -156,8 +269,8 @@ void loop() {
 	Position[5] = analogRead(PotentiometerPinMotor6);
 
 	for (MotorCounter = 0; MotorCounter < NUM_MOTORS; MotorCounter++) {
-		// Set actuator position 
-		Position[MotorCounter] = (int)1024 * (Position[MotorCounter] - ZeroPosition[MotorCounter]) / (float) (MaxPosition[MotorCounter] - ZeroPosition[MotorCounter]);
+		// Set actuator position to [0, 1023]
+		Position[MotorCounter] = (int) (1024 * (Position[MotorCounter] - ZeroPosition[MotorCounter]) / (float)(MaxPosition[MotorCounter] - ZeroPosition[MotorCounter]));
 	}
 
 	CurrentTime = millis();
@@ -229,73 +342,80 @@ void loop() {
 	digitalWrite(DirectionPinMotor6, Direction[5]); analogWrite(PWMPinMotor6, PWM[5]);
 }
 
-// Triggered when data comes into RX
-void serialEvent() {
-	//Test Manual Control Mode
-	for (MotorCounter = 0; MotorCounter <= NUM_MOTORS - 1; MotorCounter++) {
-		CorrectPosition[MotorCounter] = 0;
-	}
-
-	// serial.available() >= 30? // check if more than 30 bytes available?
-	// Consider using input stream/buffer
-	if (Serial.available() >= (4 * NUM_MOTORS) + NUM_MOTORS) {
-		String inString = "";
-		char inChar;
-		IndexSerialInput = 0;
-		while (Serial.available() > 0) {
-			inChar = Serial.read();
-			if (isDigit(inChar)) {
-				inString += inChar;
-			}
-
-			// EOL?
-			if (inChar == ' ' || inChar == '\n') {
-				InputArray[IndexSerialInput] = inString.toInt();
-				IndexSerialInput = IndexSerialInput + 1;
-				inString = "";
-			}
-
-			// invalid char
-			if (inChar != ' ' && inChar != '\n' && !isDigit(inChar)) {
-				Serial.print("Invalid data due to character with ascii code: ");
-				Serial.println(inChar);
-				return;
-			}
-		}
-
-		// validate and print input array (why not do it in above loop and save a few cycles)
-		for (int i = 0; i < sizeof(InputArray) / sizeof(InputArray[0]); i++) {
-			if (InputArray[i] > 1023 || InputArray[i] < 0) {
-				Serial.println("Invalid data due to Position set outside of range [0,1023]");
-				Serial.print("Value of invalid data was: ");
-				Serial.println(InputArray[i]);
-				Serial.flush(); // "waits until transmission of outgoing data complete"
-				return;
-			}
-		}
-
-		// LEAP controller Mode
-		// if (Serial.available() >= MotorNumber)
-		// {
-		// Serial.readBytes(InputArray, MotorNumber);
-		//
-		// for (int i = 0; i<=5; i++)
-		// {
-		// InputArray[i] = 4*InputArray[i];
-		// }
-
-		for (int i = 0; i < NUM_MOTORS; i++)
-		{
-			DesiredPosition[i] = InputArray[i];
-		}
-		//DesiredPosition[0] = InputArray[0];
-		//DesiredPosition[1] = InputArray[1];
-		//DesiredPosition[2] = InputArray[2];
-		//DesiredPosition[3] = InputArray[3];
-		//DesiredPosition[4] = InputArray[4];
-		//DesiredPosition[5] = InputArray[5];
-		Serial.flush();
-	}
+void ResetToZero()
+{
+	digitalWrite(DirectionPinMotor1, RETRACT); analogWrite(PWMPinMotor1, 1023);
+	digitalWrite(DirectionPinMotor2, RETRACT); analogWrite(PWMPinMotor2, 1023);
+	digitalWrite(DirectionPinMotor3, RETRACT); analogWrite(PWMPinMotor3, 1023);
+	digitalWrite(DirectionPinMotor4, RETRACT); analogWrite(PWMPinMotor4, 1023);
+	digitalWrite(DirectionPinMotor5, RETRACT); analogWrite(PWMPinMotor5, 1023);
+	digitalWrite(DirectionPinMotor6, RETRACT); analogWrite(PWMPinMotor6, 1023);
 }
 
+void ExtendOne(int motor)
+{
+	int dirpin = 1, pwmpin = 1;
+	switch (motor)
+	{
+	case 1:
+		dirpin = DirectionPinMotor1;
+		pwmpin = PWMPinMotor1;
+		break;
+	case 2:
+		dirpin = DirectionPinMotor2;
+		pwmpin = PWMPinMotor2;
+		break;
+	case 3:
+		dirpin = DirectionPinMotor3;
+		pwmpin = PWMPinMotor3;
+		break;
+	case 4:
+		dirpin = DirectionPinMotor4;
+		pwmpin = PWMPinMotor4;
+		break;
+	case 5:
+		dirpin = DirectionPinMotor5;
+		pwmpin = PWMPinMotor5;
+		break;
+	case 6:
+		dirpin = DirectionPinMotor6;
+		pwmpin = PWMPinMotor6;
+		break;
+	}
+	digitalWrite(dirpin, EXTEND); analogWrite(pwmpin, 1023);
 
+}
+
+void RetractOne(int motor)
+{
+	int dirpin = 1, pwmpin = 1;
+	switch (motor)
+	{
+	case 1:
+		dirpin = DirectionPinMotor1;
+		pwmpin = PWMPinMotor1;
+		break;
+	case 2:
+		dirpin = DirectionPinMotor2;
+		pwmpin = PWMPinMotor2;
+		break;
+	case 3:
+		dirpin = DirectionPinMotor3;
+		pwmpin = PWMPinMotor3;
+		break;
+	case 4:
+		dirpin = DirectionPinMotor4;
+		pwmpin = PWMPinMotor4;
+		break;
+	case 5:
+		dirpin = DirectionPinMotor5;
+		pwmpin = PWMPinMotor5;
+		break;
+	case 6:
+		dirpin = DirectionPinMotor6;
+		pwmpin = PWMPinMotor6;
+		break;
+	}
+	digitalWrite(dirpin, RETRACT); analogWrite(pwmpin, 1023);
+
+}

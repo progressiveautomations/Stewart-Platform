@@ -3,20 +3,20 @@
 #define NUM_MOTORS 6
 
 // L9958 slave select pins for SPI
-#define SlaveSelectPinMotor1 32
-#define SlaveSelectPinMotor2 34
-#define SlaveSelectPinMotor3 36
-#define SlaveSelectPinMotor4 38
-#define SlaveSelectPinMotor5 40
-#define SlaveSelectPinMotor6 42
+#define SlaveSelectPinMotor6 32
+#define SlaveSelectPinMotor5 34
+#define SlaveSelectPinMotor4 36
+#define SlaveSelectPinMotor3 38
+#define SlaveSelectPinMotor2 40
+#define SlaveSelectPinMotor1 42
 
 // L9958 DIRection pins
-#define DirectionPinMotor1 33
-#define DirectionPinMotor2 35
-#define DirectionPinMotor3 37
-#define DirectionPinMotor4 39
-#define DirectionPinMotor5 41
-#define DirectionPinMotor6 43
+#define DirectionPinMotor6 33
+#define DirectionPinMotor5 35
+#define DirectionPinMotor4 37
+#define DirectionPinMotor3 39
+#define DirectionPinMotor2 41
+#define DirectionPinMotor1 43
 
 // L9958 PWM pins
 #define PWMPinMotor1 13
