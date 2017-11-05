@@ -44,3 +44,7 @@ typedef enum MotorDirection
 	RETRACT = 0,
 	EXTEND = 1
 };
+
+const char start_char = '-';
+const char sentinel_char = '+';
+const char delimiter_char = ',';
