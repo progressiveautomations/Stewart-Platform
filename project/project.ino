@@ -4,7 +4,7 @@
 #include <Thread.h>
 
 #include "HWDefs.h"
-#include "consts.h"
+#include "project.h"
 
 // Initialize PWM and direction value variables
 int pwm[NUM_MOTORS];
