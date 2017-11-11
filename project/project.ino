@@ -1,3 +1,5 @@
+#include <Thread.h>
+#include <cppQueue.h>
 #include <SPI.h>
 #include "HWDefs.h"
 
