@@ -23,6 +23,11 @@ unsigned long previous_time;
 int input_index;
 int motor;
 
+// Initalize thread variables
+Thread parser_thread;  // to parse data in the RX buffer into input
+Thread input_thread;  // to translate input into actuator movement
+StaticThreadController<2> controller (&parser_thread, &input_thread);
+
 /*
 	Initialize pins and actuators, and set configuration values.
 
@@ -73,12 +78,22 @@ void setup()
 	// For safety, set initial actuator settings and speed to 0  
 	moveAll(RETRACT);
 	delay(RESET_DELAY);
-	for (motor = 0; motor < NUM_MOTORS; motor++) {
+	for (motor = 0; motor < NUM_MOTORS; motor++)
+	{
 		desired_pos[motor] = 0;
 		pwm[motor] = 0;
 	}
 
 	// @TODO: calculate actuator lengths?
+
+	// Set up threads for serial input processing
+	parser_thread = Thread();
+	parser_thread.setInterval(PARSER_INTERVAL);
+	parser_thread.onRun(__parseInput);
+
+	input_thread = Thread();
+	input_thread.setInterval(INPUT_INTERVAL);
+	input_thread.onRun(__translateInput);
 }
 
 /*
@@ -87,6 +102,7 @@ void setup()
 */
 void loop()
 {
+	controller.run(); // execute serial input threads
 	exec();
 }
 
@@ -99,8 +115,7 @@ void exec()
 	for (motor = 0; motor < NUM_MOTORS; motor++)
 	{
 		pos[motor] = map(analogRead(POT_PINS[motor]),
-						 ZERO_POS[motor],
-						 MAX_POS[motor],
+						 ZERO_POS[motor], MAX_POS[motor],
 						 0, 1024);
 	}
 
@@ -110,38 +125,25 @@ void exec()
 		serialEvent();
 	}
 
-	// Print position and PWM info after a given interval
-	// @ TODO: modify to stall entirely for the interval?
+	// Print position and PWM info
 	current_time = millis();
-	if (current_time - previous_time > SEND_INTERVAL)
+	if (current_time - previous_time > PRINT_INTERVAL)
 	{
 		Serial.println("Desired Positions: ");
-		for (motor = 0; motor < NUM_MOTORS; motor++) {
-			Serial.print(desired_pos[motor]);
-			Serial.print(" ");
-		}
-		Serial.println("");
+		printMotorInfo(desired_pos);
 
 		Serial.println("Current Positions: ");
-		for (motor = 0; motor < NUM_MOTORS; motor++) {
-			Serial.print(pos[motor]);
-			Serial.print(" ");
-		}
-		Serial.println("");
+		printMotorInfo(pos);
 
 		Serial.println("PWM Values");
-		for (motor = 0; motor < NUM_MOTORS; motor++) {
-			Serial.print(pwm[motor]);
-			Serial.print(" ");
-		}
-		Serial.println("");
+		printMotorInfo(pwm);
 
 		previous_time = current_time;
 	}
 
+	// Check actuator positions and send movement commands as needed
 	for (motor = 0; motor < NUM_MOTORS; motor++)
 	{
-		// Check the actuator position
 		if (abs(pos[motor] - desired_pos[motor]) <= POSITION_TOLERANCE)
 		{
 			at_correct_pos[motor] = true;
@@ -152,7 +154,6 @@ void exec()
 			at_correct_pos[motor] = false;
 		}
 
-		// Set the actuator to move if needed
 		if (!at_correct_pos[motor])
 		{
 			if (pos[motor] > desired_pos[motor])  // extended too far
@@ -185,6 +186,21 @@ void exec()
 void serialEvent()
 {
 	
+}
+
+/*
+	Print piece of info for all actuators.
+
+	@param pins: pin array for the info to print (position, PWM, etc.)
+*/
+void printMotorInfo(int pins[])
+{
+	for (motor = 0; motor < NUM_MOTORS; motor++)
+		{
+			Serial.print(pins[motor]);
+			Serial.print(" ");
+		}
+	Serial.println("");
 }
 
 /*
@@ -226,8 +242,22 @@ void calibrateAll()
 	for (motor = 0; motor < NUM_MOTORS; motor++)
 	{
 		pos[motor] = analogRead(POT_PINS[motor]);
-		Serial.print(pos[motor]);
-		Serial.print(" ");
 	}
-	Serial.println("");
+	printMotorInfo(pos);
+}
+
+/*
+	Thread function to parse from an input Queue and send to the input thread.
+*/
+void __parseInput()
+{
+	Serial.println("Hello");
+}
+
+/*
+	Thread function to process input and drive actuator movement.
+*/
+void __translateInput()
+{
+	Serial.println("Goodbye");
 }

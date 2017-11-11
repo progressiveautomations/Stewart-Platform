@@ -33,10 +33,12 @@ typedef enum MotorDirection  // to clarify the direction in which actuators move
 // SPI configuration variables (https://www.arduino.cc/en/Reference/SPI)
 #define BIT_ORDER LSBFIRST
 #define DATA_MODE SPI_MODE1 // clock polarity = low, phase = high 
-#define SEND_INTERVAL 1000  // minimum time (ms) between printing serial info
-#define INPUT_TRIGGER 15  // input (bytes) required to trigger a serial event
 
-// Serial input limiters (to parse input characters)
+// Serial input parameters
+#define PRINT_INTERVAL 1000  // minimum time (ms) between printing serial info
+#define PARSER_INTERVAL 100  // interval (ms) for parser thread
+#define INPUT_INTERVAL 1000 // interval (ms) for input thread 
+#define INPUT_TRIGGER 15  // input (bytes) required to trigger a serial event
 const char START_CHAR = '<';
 const char SENTINEL_CHAR = '>';
 const char DELIMITER_CHAR = ',';
