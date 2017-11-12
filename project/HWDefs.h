@@ -2,6 +2,8 @@
 #define TOL 1
 #define NUM_MOTORS 6
 
+const int MAX_LENGTH = 1023;
+const int MIN_LENGTH = 0;
 // L9958 slave select pins for SPI
 #define SlaveSelectPinMotor6 32
 #define SlaveSelectPinMotor5 34
@@ -10,7 +12,7 @@
 #define SlaveSelectPinMotor2 40
 #define SlaveSelectPinMotor1 42
 
-// L9958 DIRection pins
+// L9958 Direction pins
 #define DirectionPinMotor6 33
 #define DirectionPinMotor5 35
 #define DirectionPinMotor4 37

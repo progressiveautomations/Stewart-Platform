@@ -140,12 +140,12 @@ void setup() {
 	//Set initial previous send times to 0
 	PreviousTime = 0;
 
-	//Set Read/Send interval
+	//Set Read/Send interval (milliseconds)
 	SendInterval = 1000;
 
-	//calculate actuator lengths
+	//calculate actuator lengths (?)
 
-	Serial.begin(19200);
+	Serial.begin(115200);
 	Serial.println("Begin");
 	
 	// ExtendAll();
@@ -155,85 +155,43 @@ void loop() {
 	NormalOp();
 	// Calibrate();
 	/*
-	int motor = 3;
+	int motor = 2;
+	Serial.println("Extending for 2s");
 	MoveOne(motor, EXTEND);
+	MoveOne(3, EXTEND);
 	delay(2000);
+
+	Serial.println("Stopping for 4s");
+	analogWrite(PWMPinMotor2, 0);
+	analogWrite(PWMPinMotor3, 0);
+	delay(4000);
+
+	Serial.println("Retracting for 2s");
 	MoveOne(motor, RETRACT);
+	MoveOne(3, RETRACT);
 	delay(2000);*/
 }
 
 // Triggered when data comes into RX
-// example data: -0,20,40,60,80,100+ 
-// packet begins with '-', ends with '+'
-// comma delimited
-//TODO: figure out why additional serial.printlns are required for more reliable (ish) input parsing
+// example data: 0 20 40 60 80 100
+// ends with '\n'
+// TODO: add start char for more reliable parsing? This may come at the response of responsiveness
 void MySerialEvent() {
 	//Test Manual Control Mode
-	
 	for (MotorCounter = 0; MotorCounter < NUM_MOTORS; MotorCounter++) {
 		CorrectPosition[MotorCounter] = false; // originally 0
 	}
 
-	// max size: 4 bytes per position (6 digits), 7 more bytes for delimiters (commas + ends)
-	// so 31 bytes
-	//if (Serial.available() >= 31) {
-	String inString = "";
-	char inChar;
-	bool start_found = false;
-	bool end_found = false;
-
 	IndexSerialInput = 0;
-	// TODO: consider strtok instead, parseInt()
 	while (Serial.available() > 0) {
-		inChar = Serial.read();
-
-		// don't parse until we find our starting char
-		if (!start_found  && inChar == start_char)
+		// Parse NUM_MOTORS ints
+		for (int i = 0; i < NUM_MOTORS; i++)
 		{
-			// Serial.println("StartChar found!");
-			start_found = true;
-		}
-		// TODO: if start has been found, and we find a start char again
-		else if (!start_found)
-		{
-			continue;
-		}
+			InputArray[i] = Serial.parseInt();
 
-		// add to temp string if it is a valid digit
-		if (isDigit(inChar)) {
-			inString += inChar;
-		}
-
-		// Parse  temp string to int if delimiter or sentinel found
-		if (inChar == delimiter_char || inChar == sentinel_char) {
-			// Serial.println("Int parsed!");
-			InputArray[IndexSerialInput] = inString.toInt();
-			IndexSerialInput++;
-			inString = "";
-		}
-
-		// if sentinel, break out
-		if (start_found  && inChar == sentinel_char)
-		{
-			Serial.println("Sentinel found!");
-			end_found = true;
-			break;
-		}
-
-		// invalid char
-		if (inChar != delimiter_char && inChar != start_char && inChar != sentinel_char && !isDigit(inChar)) {
-			// Serial.print("Invalid data due to character with ascii code: ");
-			Serial.println(inChar);
-			return;
-		}
-	}
-
-	// validate only if start and end chars found
-	if (start_found && end_found)
-	{
-		// validate and print input array (why not do it in above loop and save a few cycles)
-		for (int i = 0; i < sizeof(InputArray) / sizeof(InputArray[0]); i++) {
-			if (InputArray[i] > 1023 || InputArray[i] < 0) {
+			// Validate input
+			if (InputArray[i] > MAX_LENGTH || InputArray[i] < MIN_LENGTH) 
+			{
 				Serial.println("Invalid data due to Position set outside of range [0,1023]");
 				Serial.print("Value of invalid data was: ");
 				Serial.println(InputArray[i]);
@@ -242,29 +200,28 @@ void MySerialEvent() {
 			}
 		}
 
-		// LEAP controller Mode
-		// if (Serial.available() >= MotorNumber)
-		// {
-		// Serial.readBytes(InputArray, MotorNumber);
-		//
-		// for (int i = 0; i<=5; i++)
-		// {
-		// InputArray[i] = 4*InputArray[i];
-		// }
-
-		for (int i = 0; i < NUM_MOTORS; i++)
+		// Break once newline detected
+		if (Serial.read() == '\n')
 		{
-			DesiredPosition[i] = InputArray[i];
+			break;
 		}
-		Serial.println("DesiredPositions updated!");
-		//DesiredPosition[0] = InputArray[0];
-		//DesiredPosition[1] = InputArray[1];
-		//DesiredPosition[2] = InputArray[2];
-		//DesiredPosition[3] = InputArray[3];
-		//DesiredPosition[4] = InputArray[4];
-		//DesiredPosition[5] = InputArray[5];
 	}
-	// Serial.flush();
+
+	// LEAP controller Mode
+	// if (Serial.available() >= MotorNumber)
+	// {
+	// Serial.readBytes(InputArray, MotorNumber);
+	//
+	// for (int i = 0; i<=5; i++)
+	// {
+	// InputArray[i] = 4*InputArray[i];
+	// }
+
+	for (int i = 0; i < NUM_MOTORS; i++)
+	{
+		DesiredPosition[i] = InputArray[i];
+	}
+	Serial.println("DesiredPositions updated!");
 }
 
 void NormalOp()
@@ -279,12 +236,11 @@ void NormalOp()
 
 	for (MotorCounter = 0; MotorCounter < NUM_MOTORS; MotorCounter++) {
 		// Set actuator position to [0, 1023]
-		//Position[MotorCounter] = (int) (1024 * (Position[MotorCounter] - ZeroPosition[MotorCounter] + 4) / (float)(MaxPosition[MotorCounter] + 4 - ZeroPosition[MotorCounter]));
-		Position[MotorCounter] = map(Position[MotorCounter], ZeroPosition[MotorCounter], MaxPosition[MotorCounter], 0, 1024);
+		Position[MotorCounter] = map(Position[MotorCounter], ZeroPosition[MotorCounter], MaxPosition[MotorCounter], MIN_LENGTH, MAX_LENGTH);
 	}
 
 	// Trigger our serial function if enough chars are available
-	if (Serial.available() >= 31 / 2) {
+	if (Serial.available() > 0) {
 		MySerialEvent();
 	}
 	CurrentTime = millis();
