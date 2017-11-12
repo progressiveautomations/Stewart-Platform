@@ -29,7 +29,7 @@ char match_buf[MAX_BUFFER_SIZE];  // buffer to temporarily store matched values
 int input_value;  // matched value obtained from the parser
 int input_array[NUM_MOTORS];  // final array of position values from the input
 
-// Time (ms) variables for printing
+// Time variables for printing
 unsigned long current_time;
 unsigned long previous_time;
 
@@ -109,7 +109,7 @@ void setup()
 }
 
 /*
-    Execute the loop routine, contained within the threads.
+    Execute the loop routine, mainly contained within the threads.
 
     Input thread (gets input from the RX buffer) ->
     Parser thread (parses RX input into the proper input format) ->
@@ -118,6 +118,22 @@ void setup()
 void loop()
 {
     controller.run();
+
+    // Print position and PWM info
+    current_time = millis();
+    if (current_time - previous_time > PRINT_INTERVAL)
+    {
+        Serial.println("Desired Positions: ");
+        printMotorInfo(desired_pos);
+
+        Serial.println("Current Positions: ");
+        printMotorInfo(pos);
+
+        Serial.println("PWM Values");
+        printMotorInfo(pwm);
+
+        previous_time = current_time;
+    }
 }
 
 /*
@@ -214,22 +230,6 @@ void translateInput()
         {
             desired_pos[motor] = input_array[motor];
         }
-    }
-
-    // Print position and PWM info
-    current_time = millis();
-    if (current_time - previous_time > PRINT_INTERVAL)
-    {
-        Serial.println("Desired Positions: ");
-        printMotorInfo(desired_pos);
-
-        Serial.println("Current Positions: ");
-        printMotorInfo(pos);
-
-        Serial.println("PWM Values");
-        printMotorInfo(pwm);
-
-        previous_time = current_time;
     }
 
     // Check actuator positions and send movement commands as needed

@@ -55,8 +55,8 @@ const char START_CHAR = '<';
 const char SENTINEL_CHAR = '>';
 const char DELIMITER_CHAR = ',';
 const char TARGET_PATTERN[] = "<(%d?%d?%d?%d),"  // pattern to match proper input from the input buffer
+                               "(%d?%d?%d?%d),"  // matches the last fully received proper string
+                               "(%d?%d?%d?%d),"  // buffer overflow issues should be handled by the hardware/interface
                                "(%d?%d?%d?%d),"
                                "(%d?%d?%d?%d),"
-                               "(%d?%d?%d?%d),"
-                               "(%d?%d?%d?%d),"
-                               "(%d?%d?%d?%d)>\n?\r?$";
+                               "(%d?%d?%d?%d)>\n*\r*$";
