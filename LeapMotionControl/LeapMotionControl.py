@@ -3,7 +3,10 @@ import serial
 import Leap
 import numpy as np
 
-# Dependencies: numpy, serial
+# Dependencies: numpy, pyserial
+
+NO_SERIAL = True # used for debugging if no Arduino present
+FRAME_RATE = 100 # Number of frames to skip before sending/printing data    
 
 # Serial-related constants
 SERIAL_PORT = "COM3"
@@ -37,7 +40,9 @@ class LeapListener(Leap.Listener):
 
     def on_init(self, controller):
         print "Initializing"
-        # self.ser = serial.Serial(SERIAL_PORT, BAUD_RATE)
+        self.frame_count = 0
+        if not NO_SERIAL:
+            self.ser = serial.Serial(SERIAL_PORT, BAUD_RATE)
 
     def on_connect(self,controller):
         print "Connected"
@@ -54,9 +59,10 @@ class LeapListener(Leap.Listener):
             hand = frame.hands.rightmost
             if hand.is_valid:
                 pos = hand.palm_position
+
                 pitch = hand.direction.pitch
-                roll = hand.direction.roll
                 yaw = hand.direction.yaw
+                roll = hand.palm_normal.roll
 
                 # 4x4 affine transform matrix
                 transform_matrix = np.matrix([[np.cos(yaw) * np.cos(pitch), np.cos(pitch) * np.sin(yaw), -np.sin(pitch), 0],
@@ -67,11 +73,24 @@ class LeapListener(Leap.Listener):
                 # Multiply transform matrix with end-effector joint position, add position of end-effector, add height of 'home' position to z-coordinate to compensate
                 # Equation: transform_matrix * PLATFORM_POSITIONS[i].T + [x, -z, y + home].T
                 actuator_lengths = []
+                ser_string = ""
                 for i in range(NUM_ACTUATORS):
                     effector_pos = transform_matrix * PLATFORM_POSITIONS[i].T + np.matrix([pos.x, -pos.z, pos.y + HOME_POSITION_HEIGHT, 0]).T
-                    actuator_lengths[i] = np.linalg.norm(effector_pos[:3] - BASE_POSITIONS[i].T) - MIN_ACTUATOR_LEN;
+                    actuator_lengths.append(np.linalg.norm(effector_pos[:3,:] - BASE_POSITIONS[i].T) - MIN_ACTUATOR_LEN)
 
-                print actuator_lengths
+                    # Assemble into serial output string
+                    ser_string += str(int(actuator_lengths[i])) + " "
+
+                # Limit output rate
+                if self.frame_count > FRAME_RATE:
+                    print ser_string
+
+                    if not NO_SERIAL:
+                        self.ser.write(ser_string)
+
+                    self.frame_count = 0
+                else:
+                    self.frame_count += 1
 
 def main():
     listener = LeapListener()
