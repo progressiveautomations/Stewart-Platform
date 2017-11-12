@@ -11,9 +11,13 @@
 #include <Thread.h>
 #include "HWDefs.h"
 
-#define BAUD_RATE 19200
+#define BAUD_RATE 115200
 
 #define NUM_MOTORS 6
+
+// Arduino bounds for actuator position (from analogRead)
+#define MIN_POS 0
+#define MAX_POS 1023
 
 #define RESET_DELAY 4000  // time (ms) for actuators to reset position during initialization
 
@@ -28,7 +32,7 @@ const uint8_t POT_PINS[NUM_MOTORS] = { POT_PIN_1, POT_PIN_2, POT_PIN_3, POT_PIN_
 // Extreme actuator positions; found through manual calibration
 // @TODO: automate calibration for the platform?
 int ZERO_POS[NUM_MOTORS] = { 199, 186, 194, 194, 192, 199 };
-int MAX_POS[NUM_MOTORS] = { 833, 827, 826, 829, 831, 833 };
+int END_POS[NUM_MOTORS] = { 833, 827, 826, 829, 831, 833 };
 
 typedef enum MotorDirection  // to clarify the direction in which actuators move
 {

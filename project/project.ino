@@ -203,8 +203,8 @@ void __translateInput()
 	for (motor = 0; motor < NUM_MOTORS; motor++)
 	{
 		pos[motor] = map(analogRead(POT_PINS[motor]),
-						 ZERO_POS[motor], MAX_POS[motor],
-						 0, 1024);
+						 ZERO_POS[motor], END_POS[motor],
+						 MIN_POS, MAX_POS);
 	}
 
 	// If a valid input is ready for processing, set it as the next desired position
