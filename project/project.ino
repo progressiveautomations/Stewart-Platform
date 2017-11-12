@@ -9,9 +9,6 @@ int pos[NUM_MOTORS];
 int desired_pos[NUM_MOTORS];
 boolean at_correct_pos[NUM_MOTORS];
 
-unsigned long current_time;  // @TODO: deprecate?
-unsigned long previous_time;  // @TODO: deprecate?
-
 // Initalize thread objects
 Thread input_thread = Thread();  // to get data from the RX buffer
 Thread parser_thread = Thread();  // to parse data in the RX buffer into input
@@ -28,9 +25,13 @@ String target_string;  // string to store characters from the character queue fo
 int target_len;  // length of the target string (used to generate a temp buffer)
 char match_buf[MAX_BUFFER_SIZE];  // buffer to temporarily store matched values
 
-// Variables for the motor thread (variables for finally processed input)
+// Variables for the translator thread (variables for finally processed input)
 int input_value;  // matched value obtained from the parser
 int input_array[NUM_MOTORS];  // final array of position values from the input
+
+// Time (ms) variables for printing
+unsigned long current_time;
+unsigned long previous_time;
 
 // Flags to prevent collisions between threads
 boolean buffer_locked = false;
@@ -101,6 +102,7 @@ void setup()
 	input_thread.setInterval(INPUT_INTERVAL);
 	parser_thread.setInterval(PARSER_INTERVAL);
 	translator_thread.setInterval(TRANSLATOR_INTERVAL);
+
 	input_thread.onRun(__getInput);
 	parser_thread.onRun(__parseInput);
 	translator_thread.onRun(__translateInput);
@@ -197,25 +199,6 @@ void __parseInput()
 */
 void __translateInput()
 {
-	// If a valid input is ready for processing, set it as the next desired position
-	if (input_ready)
-	{
-		for (motor = 0; motor < NUM_MOTORS; motor++)
-		{
-			desired_pos[motor] = input_array[motor];
-		}
-	}
-
-	printMotorInfo(desired_pos);
-}
-
-/*
-	Perform the normal routine of the loop.
-
-	@TODO: port functionality into the threads.
-*/
-void exec()
-{
 	// Read potentiometer positions and scale them to [0, 1023]
 	for (motor = 0; motor < NUM_MOTORS; motor++)
 	{
@@ -224,11 +207,14 @@ void exec()
 						 0, 1024);
 	}
 
-	// Trigger a serial function if enough input is received
-	/*if (Serial.available() >= INPUT_TRIGGER)
+	// If a valid input is ready for processing, set it as the next desired position
+	if (input_ready)
 	{
-		serialEvent();
-	}*/
+		for (motor = 0; motor < NUM_MOTORS; motor++)
+		{
+			desired_pos[motor] = input_array[motor];
+		}
+	}
 
 	// Print position and PWM info
 	current_time = millis();
