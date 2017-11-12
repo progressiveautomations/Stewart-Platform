@@ -103,9 +103,9 @@ void setup()
 	parser_thread.setInterval(PARSER_INTERVAL);
 	translator_thread.setInterval(TRANSLATOR_INTERVAL);
 
-	input_thread.onRun(__getInput);
-	parser_thread.onRun(__parseInput);
-	translator_thread.onRun(__translateInput);
+	input_thread.onRun(getInput);
+	parser_thread.onRun(parseInput);
+	translator_thread.onRun(translateInput);
 }
 
 /*
@@ -123,7 +123,7 @@ void loop()
 /*
 	Thread function to read and store serial input.
 */
-void __getInput()
+void getInput()
 {
 	while (!buffer_locked && Serial.available() > 0)
 	{
@@ -142,7 +142,7 @@ void __getInput()
 /*
 	Thread function to parse from an input Queue and send to the input thread.
 */
-void __parseInput()
+void parseInput()
 {
 	if (!buffer_locked && char_queue.size() > INPUT_TRIGGER)
 	{
@@ -197,7 +197,7 @@ void __parseInput()
 /*
 	Thread function to translate processed input to actuator movement.
 */
-void __translateInput()
+void translateInput()
 {
 	// Read potentiometer positions and scale them to [0, 1023]
 	for (motor = 0; motor < NUM_MOTORS; motor++)
