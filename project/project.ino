@@ -144,7 +144,7 @@ void __getInput()
 */
 void __parseInput()
 {
-	if (!buffer_locked && char_queue.size() > MAX_BUFFER_SIZE / 3)
+	if (!buffer_locked && char_queue.size() > INPUT_TRIGGER)
 	{
 		// Empty the queue into the string
 		buffer_locked = true;
@@ -169,7 +169,7 @@ void __parseInput()
 			for (motor = 0; motor < NUM_MOTORS; motor++)
 				{
 					input_value = atoi(ms.GetCapture(match_buf, motor));
-			   		if (0 <= input_value <= 1023)
+			   		if (MIN_POS <= input_value <= MAX_POS)
 			   		{
 			   			input_array[motor] = input_value;
 			   		}
@@ -292,7 +292,7 @@ void moveAll(MotorDirection dir)
 	for (motor = 0; motor < NUM_MOTORS; motor++)
 	{
 		digitalWrite(DIR_PINS[motor - 1], dir);
-		analogWrite(PWM_PINS[motor - 1], 1023);
+		analogWrite(PWM_PINS[motor - 1], MAX_POS);
 	}
 }
 
@@ -306,7 +306,7 @@ void moveAll(MotorDirection dir)
 void moveOne(int motor, MotorDirection dir)
 {
 	digitalWrite(DIR_PINS[motor - 1], dir);
-	analogWrite(PWM_PINS[motor - 1], 1023);
+	analogWrite(PWM_PINS[motor - 1], MAX_POS);
 	Serial.println(analogRead(POT_PINS[motor - 1]));
 }
 
