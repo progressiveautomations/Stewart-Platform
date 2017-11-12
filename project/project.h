@@ -3,6 +3,12 @@
     clarifying definitions for the Arduino.
 */
 #pragma once
+
+#include <LinkedList.h>
+#include <Regexp.h>
+#include <SPI.h>
+#include <StaticThreadController.h>
+#include <Thread.h>
 #include "HWDefs.h"
 
 #define BAUD_RATE 19200
@@ -30,15 +36,24 @@ typedef enum MotorDirection  // to clarify the direction in which actuators move
     EXTEND = 1
 };
 
-// SPI configuration variables (https://www.arduino.cc/en/Reference/SPI)
+// Serial/SPI configuration variables (https://www.arduino.cc/en/Reference/SPI)
 #define BIT_ORDER LSBFIRST
 #define DATA_MODE SPI_MODE1 // clock polarity = low, phase = high 
+#define PRINT_INTERVAL 1000  // minimum time (ms) between printing serial info; @TODO: deprecate?
+#define INPUT_INTERVAL 100  // interval (ms) for input thread
+#define PARSER_INTERVAL 500  // interval (ms) for parser thread
+#define TRANSLATOR_INTERVAL 1000 // interval (ms) for translation thread 
 
 // Serial input parameters
-#define PRINT_INTERVAL 1000  // minimum time (ms) between printing serial info
-#define PARSER_INTERVAL 100  // interval (ms) for parser thread
-#define INPUT_INTERVAL 1000 // interval (ms) for input thread 
-#define INPUT_TRIGGER 15  // input (bytes) required to trigger a serial event
+#define MAX_BUFFER_SIZE 31 // 4 bytes per position (6 digits), 7 for limiter characters
+
+#define INPUT_TRIGGER 15  // input (bytes) required to trigger a serial event; @TODO: deprecate?
 const char START_CHAR = '<';
 const char SENTINEL_CHAR = '>';
 const char DELIMITER_CHAR = ',';
+const char TARGET_PATTERN[] = "<(%d?%d?%d?%d),"  // pattern to match proper input from the input buffer
+                               "(%d?%d?%d?%d),"
+                               "(%d?%d?%d?%d),"
+                               "(%d?%d?%d?%d),"
+                               "(%d?%d?%d?%d),"
+                               "(%d?%d?%d?%d)>\n?\r?$";

@@ -1,9 +1,3 @@
-#include <cppQueue.h>
-#include <SPI.h>
-#include <StaticThreadController.h>
-#include <Thread.h>
-
-#include "HWDefs.h"
 #include "project.h"
 
 // Initialize PWM and direction value variables
@@ -15,18 +9,35 @@ int pos[NUM_MOTORS];
 int desired_pos[NUM_MOTORS];
 boolean at_correct_pos[NUM_MOTORS];
 
-// Initialize serial input variables
-unsigned long current_time;
-unsigned long previous_time;
+unsigned long current_time;  // @TODO: deprecate?
+unsigned long previous_time;  // @TODO: deprecate?
 
-// Initialize index variables
-int input_index;
-int motor;
+// Initalize thread objects
+Thread input_thread = Thread();  // to get data from the RX buffer
+Thread parser_thread = Thread();  // to parse data in the RX buffer into input
+Thread translator_thread = Thread();  // to translate input into actuator movement
+StaticThreadController<3> controller (&input_thread, &parser_thread, &translator_thread);
 
-// Initalize thread variables
-Thread parser_thread;  // to parse data in the RX buffer into input
-Thread input_thread;  // to translate input into actuator movement
-StaticThreadController<2> controller (&parser_thread, &input_thread);
+// Variables for the input thread
+char input_char;  // store char from the RX buffer
+LinkedList<char> char_queue; // backlog of chars from the RX buffer
+
+// Variables for the parser thread (intermediate variables for matching the input)
+MatchState ms;  // object used to match Lua string patterns
+String target_string;  // string to store characters from the character queue for matching
+int target_len;  // length of the target string (used to generate a temp buffer)
+char match_buf[MAX_BUFFER_SIZE];  // buffer to temporarily store matched values
+
+// Variables for the motor thread (variables for finally processed input)
+int input_value;  // matched value obtained from the parser
+int input_array[NUM_MOTORS];  // final array of position values from the input
+
+// Flags to prevent collisions between threads
+boolean buffer_locked = false;
+boolean input_ready = false;
+boolean input_valid = true;
+
+int motor;  // iterator variable
 
 /*
 	Initialize pins and actuators, and set configuration values.
@@ -86,28 +97,122 @@ void setup()
 
 	// @TODO: calculate actuator lengths?
 
-	// Set up threads for serial input processing
-	parser_thread = Thread();
-	parser_thread.setInterval(PARSER_INTERVAL);
-	parser_thread.onRun(__parseInput);
-
-	input_thread = Thread();
+	// Configure threads for serial input processing
 	input_thread.setInterval(INPUT_INTERVAL);
-	input_thread.onRun(__translateInput);
+	parser_thread.setInterval(PARSER_INTERVAL);
+	translator_thread.setInterval(TRANSLATOR_INTERVAL);
+	input_thread.onRun(__getInput);
+	parser_thread.onRun(__parseInput);
+	translator_thread.onRun(__translateInput);
 }
 
 /*
-	Execute the loop routine.
-	Default behaviour is contained in the "exec" function.
+	Execute the loop routine, contained within the threads.
+
+	Input thread (gets input from the RX buffer) ->
+	Parser thread (parses RX input into the proper input format) ->
+	Translator thread (translates input to actuator movement)
 */
 void loop()
 {
-	controller.run(); // execute serial input threads
-	exec();
+	controller.run();
+}
+
+/*
+	Thread function to read and store serial input.
+*/
+void __getInput()
+{
+	while (!buffer_locked && Serial.available() > 0)
+	{
+		input_char = Serial.read();
+		char_queue.add(input_char);
+	}
+
+	while (!buffer_locked && char_queue.size() > MAX_BUFFER_SIZE)
+	{
+		buffer_locked = true;
+		char_queue.remove(0);
+	}
+	buffer_locked = false;
+}
+
+/*
+	Thread function to parse from an input Queue and send to the input thread.
+*/
+void __parseInput()
+{
+	if (!buffer_locked && char_queue.size() > MAX_BUFFER_SIZE / 3)
+	{
+		// Empty the queue into the string
+		buffer_locked = true;
+		while (char_queue.size() > 0)
+		{
+			target_string += char_queue.shift();
+		}
+		buffer_locked = false;
+
+		// String must be in char array format in order to be parsed
+		target_len = target_string.length();
+		char target_buf[target_len + 1];
+		target_string.toCharArray(target_buf, target_len);
+
+		// Parse and store the input if it is valid
+		ms.Target(target_buf);
+		char result = ms.Match(TARGET_PATTERN, 0);
+		if (result == REGEXP_MATCHED)
+		{	
+			input_valid = true;
+			input_ready = false; // only flag true after input is parsed and valid
+			for (motor = 0; motor < NUM_MOTORS; motor++)
+				{
+					input_value = atoi(ms.GetCapture(match_buf, motor));
+			   		if (0 <= input_value <= 1023)
+			   		{
+			   			input_array[motor] = input_value;
+			   		}
+			   		else
+			   		{
+			   			input_valid = false;
+			   			Serial.println("Invalid input value detected!");
+			   			break;
+			   		}
+			   		input_ready = input_valid;
+		   }
+		}
+		else
+		{
+			// Print the failed result for debug
+			Serial.print("Unable to properly parse input!");
+			Serial.print(target_buf);
+			Serial.println("");
+		}
+
+		target_string = "";  // reset for next iteration
+	}
+}
+
+/*
+	Thread function to translate processed input to actuator movement.
+*/
+void __translateInput()
+{
+	// If a valid input is ready for processing, set it as the next desired position
+	if (input_ready)
+	{
+		for (motor = 0; motor < NUM_MOTORS; motor++)
+		{
+			desired_pos[motor] = input_array[motor];
+		}
+	}
+
+	printMotorInfo(desired_pos);
 }
 
 /*
 	Perform the normal routine of the loop.
+
+	@TODO: port functionality into the threads.
 */
 void exec()
 {
@@ -120,10 +225,10 @@ void exec()
 	}
 
 	// Trigger a serial function if enough input is received
-	if (Serial.available() >= INPUT_TRIGGER)
+	/*if (Serial.available() >= INPUT_TRIGGER)
 	{
 		serialEvent();
-	}
+	}*/
 
 	// Print position and PWM info
 	current_time = millis();
@@ -174,18 +279,6 @@ void exec()
 		digitalWrite(DIR_PINS[motor], dir[motor]);
 		analogWrite(PWM_PINS[motor], pwm[motor]);
 	}
-}
-
-/*
-	Process data given the trigger for data in the RX buffer.
-	Each packet is intended to be enclosed by angle brackets, with comma-delimited values;
-	e.g. <0,20,40,60,80,100> 
-
-	@TODO: figure out why additional serial.printlns are required for more reliable (ish) input parsing
-*/
-void serialEvent()
-{
-	
 }
 
 /*
@@ -244,20 +337,4 @@ void calibrateAll()
 		pos[motor] = analogRead(POT_PINS[motor]);
 	}
 	printMotorInfo(pos);
-}
-
-/*
-	Thread function to parse from an input Queue and send to the input thread.
-*/
-void __parseInput()
-{
-	Serial.println("Hello");
-}
-
-/*
-	Thread function to process input and drive actuator movement.
-*/
-void __translateInput()
-{
-	Serial.println("Goodbye");
 }
