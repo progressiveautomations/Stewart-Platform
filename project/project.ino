@@ -16,7 +16,6 @@ Thread translator_thread = Thread();  // to translate input into actuator moveme
 StaticThreadController<3> controller (&input_thread, &parser_thread, &translator_thread);
 
 // Variables for the input thread
-char input_char;  // store char from the RX buffer
 LinkedList<char> char_queue; // backlog of chars from the RX buffer
 
 // Variables for the parser thread (intermediate variables for matching the input)
@@ -138,13 +137,13 @@ void loop()
 
 /*
     Thread function to read and store serial input.
+    Also manages the buffer queue size.
 */
 void getInput()
 {
     while (!buffer_locked && Serial.available() > 0)
     {
-        input_char = Serial.read();
-        char_queue.add(input_char);
+        char_queue.add(Serial.read());
     }
 
     if (!buffer_locked && char_queue.size() > MAX_BUFFER_SIZE)
