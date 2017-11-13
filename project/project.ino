@@ -147,12 +147,15 @@ void getInput()
         char_queue.add(input_char);
     }
 
-    while (!buffer_locked && char_queue.size() > MAX_BUFFER_SIZE)
+    if (!buffer_locked && char_queue.size() > MAX_BUFFER_SIZE)
     {
         buffer_locked = true;
-        char_queue.remove(0);
+        while (char_queue.size() > MAX_BUFFER_SIZE)
+        {
+            char_queue.remove(0);
+        }
+        buffer_locked = false;
     }
-    buffer_locked = false;
 }
 
 /*
