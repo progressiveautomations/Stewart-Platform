@@ -21,7 +21,7 @@
 
 #define RESET_DELAY 4000  // time (ms) for actuators to reset position during initialization
 
-#define POSITION_TOLERANCE 1  // uncertainty for which offset from desired position is acceptable
+#define POSITION_TOLERANCE 5  // uncertainty for which offset from desired position is acceptable
 
 // Pin group arrays; each value corresponding to the actuator (1-6)
 const uint8_t SS_PINS[NUM_MOTORS] = { SS_PIN_1, SS_PIN_2, SS_PIN_3, SS_PIN_4, SS_PIN_5, SS_PIN_6 };

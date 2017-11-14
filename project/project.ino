@@ -252,16 +252,15 @@ void translateInput()
             if (pos[motor] > desired_pos[motor])  // extended too far
             {
                 dir[motor] = RETRACT;
-                // pwm[motor] = abs(pos[motor] - desired_pos[motor]);
-                pwm[motor] = 100; // @TODO: modify the override?
             }
-
-            else if (pos[motor] < desired_pos[motor])  // retracted too far
+            else  // retracted too far
             {
                 dir[motor] = EXTEND;
-                // pwm[motor] = abs(pos[motor] - desired_pos[motor]);
-                pwm[motor] = 100;
             }
+
+            pwm[motor] = map(abs(pos[motor] - desired_pos[motor]),
+                             MIN_POS, MAX_POS,
+                             0, 100);
         }
 
         digitalWrite(DIR_PINS[motor], dir[motor]);
