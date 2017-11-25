@@ -23,7 +23,7 @@ boolean CorrectPosition[NUM_MOTORS];
 
 //Initialize serial input variable
 int InputData[2];
-int InputArray[NUM_MOTORS];
+unsigned int InputArray[NUM_MOTORS];
 
 //Initialize time and time between serial port writing variables
 unsigned long CurrentTime;
@@ -177,34 +177,31 @@ void loop() {
 // ends with '\n'
 // TODO: add start char for more reliable parsing? This may come at the response of responsiveness
 void MySerialEvent() {
+	bool valid_data = true;
 	//Test Manual Control Mode
 	for (MotorCounter = 0; MotorCounter < NUM_MOTORS; MotorCounter++) {
 		CorrectPosition[MotorCounter] = false; // originally 0
 	}
 
 	IndexSerialInput = 0;
-	while (Serial.available() > 0) {
-		// Parse NUM_MOTORS ints
-		for (int i = 0; i < NUM_MOTORS; i++)
-		{
-			InputArray[i] = Serial.parseInt();
+	// 6 ints at 2 bytes each
+	while (Serial.available() > 12 && IndexSerialInput < NUM_MOTORS) {
 
-			// Validate input
-			if (InputArray[i] > MAX_LENGTH || InputArray[i] < MIN_LENGTH) 
-			{
-				Serial.println("Invalid data due to Position set outside of range [0,1023]");
-				Serial.print("Value of invalid data was: ");
-				Serial.println(InputArray[i]);
-				Serial.flush(); // "waits until transmission of outgoing data complete"
-				return;
-			}
-		}
+		// Parse high and low bytes, reassemble into int
+		byte highb = Serial.read();
+		byte lowb = Serial.read();
+		InputArray[IndexSerialInput] = (highb << 8) | lowb;
 
-		// Break once newline detected
-		if (Serial.read() == '\n')
+		// Validate input
+		if (InputArray[IndexSerialInput] > MAX_LENGTH || InputArray[IndexSerialInput] < MIN_LENGTH) 
 		{
-			break;
+			Serial.println("Invalid data due to Position set outside of range [0,1023]");
+			Serial.print("Value of invalid data was: ");
+			Serial.println(InputArray[IndexSerialInput]);
+			valid_data = false;
 		}
+		++IndexSerialInput;
+
 	}
 
 	// LEAP controller Mode
@@ -217,11 +214,14 @@ void MySerialEvent() {
 	// InputArray[i] = 4*InputArray[i];
 	// }
 
-	for (int i = 0; i < NUM_MOTORS; i++)
+	if (valid_data)
 	{
-		DesiredPosition[i] = InputArray[i];
+		for (int i = 0; i < NUM_MOTORS; i++)
+		{
+			DesiredPosition[i] = InputArray[i];
+		}
+		Serial.println("DesiredPositions updated!");
 	}
-	Serial.println("DesiredPositions updated!");
 }
 
 void NormalOp()

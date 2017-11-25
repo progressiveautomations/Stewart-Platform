@@ -35,6 +35,22 @@ MIN_ACTUATOR_LEN = 335.0
 
 NUM_ACTUATORS = 6
 
+MIN_EXTENSION = 0
+MAX_EXTENSION = 1024
+
+
+def assemble_output(actuator_pos):
+    """
+    Converts list of 6 actuator positions to bytearray.
+    """
+
+    ser_string = []
+    for i in actuator_pos:
+        # Converts float64 to int, clamps between MIN and MAX, splits into low and high byte, adds to list
+        ser_string.extend(list(divmod(max(MIN_EXTENSION, min(int(i), MAX_EXTENSION)), 256)))
+
+    return bytearray(ser_string)
+
 
 class LeapListener(Leap.Listener):
 
@@ -79,7 +95,7 @@ class LeapListener(Leap.Listener):
                     actuator_lengths.append(np.linalg.norm(effector_pos[:3,:] - BASE_POSITIONS[i].T) - MIN_ACTUATOR_LEN)
 
                     # Assemble into serial output string
-                    ser_string += str(int(actuator_lengths[i])) + " "
+                    ser_string = assemble_output(actuator_lengths)
 
                 # Limit output rate
                 if self.frame_count > FRAME_RATE:
