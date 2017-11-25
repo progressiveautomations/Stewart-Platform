@@ -243,5 +243,6 @@ ModelManifest.xml
 
 # FAKE - F# Make
 .fake/
-/LeapSDK
+
 project/project_AVR_MEGA2560_atmega2560.hex
+project/__vm
