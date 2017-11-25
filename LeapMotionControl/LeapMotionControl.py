@@ -35,6 +35,9 @@ END_EFF_POS = np.matrix([[-225.6, -73.26, 0, 1.0],
 HOME_POSITION_HEIGHT = 319.0
 MIN_ACTUATOR_LEN = 335.0
 
+MIN_EXTENSION = 0
+MAX_EXTENSION = 1024
+
 
 def assemble_serial_output(actuators):
     """
@@ -45,11 +48,12 @@ def assemble_serial_output(actuators):
     :return: String to send over serial.
     :rtype: str
     """
-    s = ""
-    for l in actuators:
-        s += str(int(l)) + " "
+    ser_string = []
+    for i in actuator_pos:
+        # Converts float64 to int, clamps between MIN and MAX, splits into low and high byte, adds to list
+        ser_string.extend(list(divmod(max(MIN_EXTENSION, min(int(i), MAX_EXTENSION)), 256)))
 
-    return s
+    return bytearray(ser_string)
 
 
 class LeapListener(Leap.Listener):
