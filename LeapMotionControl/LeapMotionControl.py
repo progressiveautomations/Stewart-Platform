@@ -1,55 +1,46 @@
 import sys
-import serial
+sys.dont_write_bytecode = True
+
 import Leap
 import numpy as np
 
-# Dependencies: numpy, pyserial
+from serial import Serial
 
-NO_SERIAL = True # used for debugging if no Arduino present
-FRAME_RATE = 10 # Number of frames to skip before sending/printing data    
+
+NO_SERIAL = False  # used for debugging if no Arduino present
+FRAME_RATE = 10  # number of frames to skip before sending/printing data    
 
 # Serial-related constants
-SERIAL_PORT = "COM3"
+SERIAL_PORT = 'COM3'
 BAUD_RATE = 115200
 
 # Platform position-related matrices and constants
-
 NUM_ACTUATORS = 6
-
-# Base actuator positions (6 1x3 vectors)
-BASE_POS = np.matrix([[-246.34, 86.42, 0],
+HOME_POSITION_HEIGHT = 319.0
+MIN_ACTUATOR_LEN = 335.0
+BASE_POS = np.matrix([[-246.34, 86.42, 0],  # base actuator positions (6 1x3 vectors)
                       [-198.16, 170.38, 0],
                       [198.16, 170.38, 0],
                       [246.34, 86.42, 0],
                       [48.48, -256.80, 0],
                       [-48.48, -256.80, 0]])
-
-# End effector positions (6 1x4 vectors)
-END_EFF_POS = np.matrix([[-225.6, -73.26, 0, 1.0],
+END_EFF_POS = np.matrix([[-225.6, -73.26, 0, 1.0],  # end effector positions (6 1x4 vectors)
                          [-49.35, 232.01, 0, 1.0],
                          [49.35, 232.01, 0, 1.0],
                          [225.60, -73.26, 0, 1.0],
                          [176.25, -158.75, 0, 1.0],
                          [-176.25, -158.75, 0, 1.0]])
 
-HOME_POSITION_HEIGHT = 319.0
-MIN_ACTUATOR_LEN = 335.0
-
 
 def assemble_serial_output(actuators):
-    """
+    '''
     Assembles a string to send over serial output given list of actuator positions.
+    Format is comma delimited, enclosed within angle brackets (no whitespace).
 
-    :param actuators: List of numbers representing desired actuator positions.
-    :type actuators: list
-    :return: String to send over serial.
-    :rtype: str
-    """
-    s = ""
-    for l in actuators:
-        s += str(int(l)) + " "
-
-    return s
+    @param actuators: numbers representing desired actuator positions (list)
+    @return: string to send over serial (string)
+    '''
+    return ''.join(('<', ','.join([str(int(l)) for l in actuators]), '>'))
 
 
 class LeapListener(Leap.Listener):
@@ -58,7 +49,7 @@ class LeapListener(Leap.Listener):
         print "Initializing"
         self.frame_count = 0
         if not NO_SERIAL:
-            self.ser = serial.Serial(SERIAL_PORT, BAUD_RATE)
+            self.ser = Serial(SERIAL_PORT, BAUD_RATE)
 
     def on_connect(self,controller):
         print "Connected"
@@ -67,18 +58,18 @@ class LeapListener(Leap.Listener):
         print "Disconnected"
 
     def on_exit(self, controller):
-        """
+        '''
         Called when the listener instance is removed from the controller.
         Also closes the serial connection (if in use).
-        """
+        '''
         print "Exited"
         if not NO_SERIAL:
             self.ser.close()
 
     def on_frame(self, controller):
-        """
+        '''
         Called when new tracking data arrives.
-        """
+        '''
         frame = controller.frame()
         if len(frame.hands) > 0:
             # Grab rightmost hand
@@ -102,7 +93,7 @@ class LeapListener(Leap.Listener):
                 # Equation: transform_matrix * PLATFORM_POSITIONS[i].T + [x, -z, y + home, 0].T = effector_pos
                 # Dims:     ( 4 x 4 )           ( 4 x 1 )                 ( 4 x 1 )                ( 4 x 1 )
                 actuator_lengths = []
-                for i in range(NUM_ACTUATORS):
+                for i in xrange(NUM_ACTUATORS):
                     effector_pos = transform_matrix * END_EFF_POS[i].T + np.matrix([pos.x, -pos.z, pos.y + HOME_POSITION_HEIGHT, 0]).T
 
                     # Get length of extension from min actuator length
@@ -124,6 +115,7 @@ class LeapListener(Leap.Listener):
                 else:
                     self.frame_count += 1
 
+
 def main():
 
     # Initialize listener and controller
@@ -137,5 +129,6 @@ def main():
 
     controller.remove_listener(listener)
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     main()
