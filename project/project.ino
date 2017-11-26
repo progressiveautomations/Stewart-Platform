@@ -1,36 +1,36 @@
 #include "project.h"
 
-// Initialize PWM and direction value variables
-int pwm[NUM_MOTORS];
+// PWM and direction value variables
+uint16_t pwm[NUM_MOTORS];  // maximum of 255, but 16-bit for input consistency
 MotorDirection dir[NUM_MOTORS];
 
-// Initialize position variables (extreme values from manual calibration)
-int pos[NUM_MOTORS];
-int desired_pos[NUM_MOTORS];
+// Position variables (extreme values from manual calibration)
+uint16_t pos[NUM_MOTORS];
+uint16_t desired_pos[NUM_MOTORS];
 boolean at_correct_pos[NUM_MOTORS];
 
-// Initalize thread objects
+// Thread objects
 Thread input_thread = Thread();  // to get data from the RX buffer
 Thread parser_thread = Thread();  // to parse data in the RX buffer into input
 Thread translator_thread = Thread();  // to translate input into actuator movement
 StaticThreadController<3> controller (&input_thread, &parser_thread, &translator_thread);
 
-// Variables for the input thread
-LinkedList<char> char_queue; // backlog of chars from the RX buffer
+// Input thread variables
+LinkedList<char> char_queue; // actively managed backlog of chars from the RX buffer
 
-// Variables for the parser thread (intermediate variables for matching the input)
+// Parser thread variables
 MatchState ms;  // object used to match Lua string patterns
 String target_string;  // string to store characters from the character queue for matching
-int target_len;  // length of the target string (used to generate a temp buffer)
+uint8_t target_len;  // length of the target string (used to generate a temp buffer)
 char match_buf[MAX_BUFFER_SIZE];  // buffer to temporarily store matched values
 
-// Variables for the translator thread (variables for finally processed input)
+// Translator thread variables
 long reading_sum;  // sum of multiple readings to be normalized for a final value
-int input_value;  // matched value obtained from the parser
-int input_array[NUM_MOTORS];  // final array of position values from the input
-int pos_diff;  // difference between current and desired position 
+uint16_t input_value;  // matched value obtained from the parser
+uint16_t input_array[NUM_MOTORS];  // final array of position values from the input
+uint16_t pos_diff;  // difference between current and desired position
 
-// Time variables for printing
+// Time variables (for printing)
 unsigned long current_time;
 unsigned long previous_time;
 
@@ -40,8 +40,9 @@ boolean input_ready = false;
 boolean input_valid = true;
 
 // Iterator variables
-int reading;
-int motor;
+uint8_t motor;
+uint8_t reading;
+
 
 /*
     Initialize pins and actuators, and set configuration values.
@@ -99,7 +100,8 @@ void setup()
         pwm[motor] = 0;
     }
 
-    // @TODO: calculate actuator lengths?
+    // @TODO:
+    // Calculate actuator lengths? Automatic calibration?
 
     // Configure threads for serial input processing
     input_thread.setInterval(INPUT_INTERVAL);
@@ -111,12 +113,10 @@ void setup()
     translator_thread.onRun(translateInput);
 }
 
+
 /*
     Execute the loop routine, mainly contained within the threads.
-
-    Input thread (gets input from the RX buffer) ->
-    Parser thread (parses RX input into the proper input format) ->
-    Translator thread (translates input to actuator movement)
+    Also prints platform info at a given interval.
 */
 void loop()
 {
@@ -137,12 +137,8 @@ void loop()
 
         previous_time = current_time;
     }
-    // moveOne(6, RETRACT);
-    // delay(2000);
-    // moveOne(6, EXTEND);
-    // delay(2000);
-    // moveAll(RETRACT);
 }
+
 
 /*
     Thread function to read and store serial input.
@@ -150,24 +146,28 @@ void loop()
 */
 void getInput()
 {
-    while (!buffer_locked && Serial.available() > 0)
+    if (!buffer_locked)
     {
-        char_queue.add(Serial.read());
-    }
-
-    if (!buffer_locked && char_queue.size() > MAX_BUFFER_SIZE)
-    {
-        buffer_locked = true;
-        while (char_queue.size() > MAX_BUFFER_SIZE)
+        while (Serial.available() > 0)
         {
-            char_queue.remove(0);
+            char_queue.add(Serial.read());
         }
-        buffer_locked = false;
+
+        if (char_queue.size() > MAX_BUFFER_SIZE)
+        {
+            buffer_locked = true;
+            while (char_queue.size() > MAX_BUFFER_SIZE)
+            {
+                char_queue.remove(0);
+            }
+            buffer_locked = false;
+        }
     }
 }
 
+
 /*
-    Thread function to parse from an input Queue and send to the input thread.
+    Thread function to parse from an input Queue and prep data for the translator thread.
 */
 void parseInput()
 {
@@ -181,7 +181,7 @@ void parseInput()
         }
         buffer_locked = false;
 
-        // String must be in char array format in order to be parsed
+        // Convert string to char array
         target_len = target_string.length();
         char target_buf[target_len + 1];
         target_string.toCharArray(target_buf, target_len);
@@ -212,24 +212,25 @@ void parseInput()
         else
         {
             // Print the failed result for debug
-            Serial.print("Unable to properly parse input!");
+            Serial.print("Unable to properly parse input: ");
             Serial.print(target_buf);
             Serial.println("");
         }
 
-        target_string = "";  // reset for next iteration
+        target_string = "";  // reset for the next iteration
     }
 }
+
 
 /*
     Thread function to translate processed input to actuator movement.
 */
 void translateInput()
 {
-    // Read potentiometer positions and scale them to [0, 1023]
+    // Read potentiometer positions and scale them to the Arduino bounds
     for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
-        // Normalize value over multiple readings
+        // Normalize the value over multiple readings
         reading_sum = 0;
         for (reading = 0; reading < NUM_READINGS; ++reading)
         {
@@ -250,46 +251,37 @@ void translateInput()
         }
     }
 
-    // Check actuator positions and send movement commands as needed
+    // Check actuator positions and set movement parameters (PWM, direction) as needed
     for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
-        if (abs(pos[motor] == desired_pos[motor]))
+        pos_diff = pos[motor] - desired_pos[motor];
+        at_correct_pos[motor] = (pos_diff == 0);
+
+        if (at_correct_pos[motor])
         {
-            at_correct_pos[motor] = true;
             pwm[motor] = 0;
         }
         else
         {
-            at_correct_pos[motor] = false;
-        }
-
-        if (!at_correct_pos[motor])
-        {
-            pos_diff = pos[motor] - desired_pos[motor];
-
-            // Get PWM value for the actuator movement
+            // Set a slower PWM if the actuator is close to the desired position
             if (pos_diff <= POSITION_TOLERANCE)
             {
-                pwm[motor] = 20;
+                pwm[motor] = PWM_NEAR;
             }
             else
             {
-                pwm[motor] = map(abs(pos_diff),
-                             MIN_POS, MAX_POS,
-                             0, 100);  // limit PWM to 100 (vs. 255)
+                pwm[motor] = PWM_FAR;
             }
 
-            // Get the direction for the actuator movement
-            if (pos_diff > 0)  // extended too far
+            // Set the direction based on over/under-extension
+            if (pos_diff > 0)
             {
                 dir[motor] = RETRACT;
             }
-            else  // retracted too far
+            else
             {
                 dir[motor] = EXTEND;
             }
-
-            getDir(motor);
         }
 
         digitalWrite(DIR_PINS[motor], dir[motor]);
@@ -297,12 +289,13 @@ void translateInput()
     }
 }
 
+
 /*
     Print piece of info for all actuators.
 
     @param pins: pin array for the info to print (position, PWM, etc.)
 */
-void printMotorInfo(int pins[])
+void printMotorInfo(uint16_t pins[])
 {
     for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
@@ -312,22 +305,6 @@ void printMotorInfo(int pins[])
     Serial.println("");
 }
 
-/*
-    Set the direction to move an actuator (EXTEND/RETRACT).
-
-    @param motor: actuator motor number to move
-*/
-void getDir(int motor)
-{
-    if (pos[motor] > desired_pos[motor])  // extended too far
-    {
-        dir[motor] = RETRACT;
-    }
-    else  // retracted too far
-    {
-        dir[motor] = EXTEND;
-    }
-}
 
 /*
     Moves all actuators in a given direction.
@@ -345,12 +322,12 @@ void moveAll(MotorDirection dir)
 
 /*
     Moves one actuator in a given direction.
-    Prints out raw analogRead position for the call.
+    Prints the raw analogRead position for the call.
 
     @param motor: actuator motor number to move
     @param dir: direction (EXTEND/RETRACT) for the actuator
 */
-void moveOne(int motor, MotorDirection dir)
+void moveOne(uint8_t motor, MotorDirection dir)
 {
     digitalWrite(DIR_PINS[motor - 1], dir);
     analogWrite(PWM_PINS[motor - 1], MAX_POS);
@@ -358,7 +335,7 @@ void moveOne(int motor, MotorDirection dir)
 }
 
 /*
-    Calibration routine for all actuators:
+    Calibration routine for all actuators.
 
     @TODO: finish implementation.
 */

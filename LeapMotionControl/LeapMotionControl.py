@@ -5,69 +5,66 @@ import Leap
 import numpy as np
 import serial
 
-
-NO_SERIAL = False  # used for debugging if no Arduino present
+# Leap Motion constants
 FRAME_RATE = 10  # number of frames to skip before sending/printing data    
 
-# Serial-related constants
+# Serial constants
+USE_SERIAL = True  # set False for debugging if no Arduino present
 SERIAL_PORT = 'COM3'
 BAUD_RATE = 115200
 
-# Platform position-related matrices and constants
+# Platform position matrices and constants
 NUM_ACTUATORS = 6
 HOME_POSITION_HEIGHT = 319.0
 MIN_ACTUATOR_LEN = 335.0
-BASE_POS = np.matrix([[-246.34, 86.42, 0],  # base actuator positions (6 1x3 vectors)
-                      [-198.16, 170.38, 0],
-                      [198.16, 170.38, 0],
-                      [246.34, 86.42, 0],
-                      [48.48, -256.80, 0],
-                      [-48.48, -256.80, 0]])
-END_EFF_POS = np.matrix([[-225.6, -73.26, 0, 1.0],  # end effector positions (6 1x4 vectors)
-                         [-49.35, 232.01, 0, 1.0],
-                         [49.35, 232.01, 0, 1.0],
-                         [225.60, -73.26, 0, 1.0],
-                         [176.25, -158.75, 0, 1.0],
-                         [-176.25, -158.75, 0, 1.0]])
-
-
-def assemble_serial_output(actuators):
-    '''
-    Assembles a string to send over serial output given list of actuator positions.
-    Format is comma delimited, enclosed within angle brackets (no whitespace).
-
-    @param actuators: numbers representing desired actuator positions (list)
-    @return: string to send over serial (string)
-    '''
-    return ''.join(('<', ','.join([str(int(l)) for l in actuators]), '>'))
+BASE_POS = np.matrix([  # base actuator positions (6 1x3 vectors)
+    [-246.34, 86.42, 0],
+    [-198.16, 170.38, 0],
+    [198.16, 170.38, 0],
+    [246.34, 86.42, 0],
+    [48.48, -256.80, 0],
+    [-48.48, -256.80, 0]
+])
+END_EFF_POS = np.matrix([  # end effector positions (6 1x4 vectors)
+    [-225.6, -73.26, 0, 1.0],
+    [-49.35, 232.01, 0, 1.0],
+    [49.35, 232.01, 0, 1.0],
+    [225.60, -73.26, 0, 1.0],
+    [176.25, -158.75, 0, 1.0],
+    [-176.25, -158.75, 0, 1.0]
+])
 
 
 class LeapListener(Leap.Listener):
 
     def on_init(self, controller):
-        print "Initializing"
+        print "-I- Initializing"
         self.frame_count = 0
-        if not NO_SERIAL:
-            self.ser = serial.Serial(
-                port=SERIAL_PORT,
-                baudrate=BAUD_RATE,
-                write_timeout=1,  # catch any input hangs (>1s)
-                # xonxoff=1  # enable software flow control; needs further investigation for noticeable difference
-            )
+        if USE_SERIAL:
+            try:
+                self.ser = serial.Serial(
+                    port=SERIAL_PORT,
+                    baudrate=BAUD_RATE,
+                    write_timeout=1,  # catch any input hangs (>1s)
+                    # xonxoff=1  # enable software flow control; needs further investigation for noticeable difference
+                )
+            except serial.SerialException:
+                print "-E- Serial object unavailable! Exiting..."
+                exit()
 
-    def on_connect(self,controller):
-        print "Connected"
+    def on_connect(self, controller):
+        print "-I- Connected"
     
     def on_disconnect(self, controller):
-        print "Disconnected"
+        print "-W- Disconnected"
 
     def on_exit(self, controller):
         '''
         Called when the listener instance is removed from the controller.
         Also closes the serial connection (if in use).
         '''
-        print "Exited"
-        if not NO_SERIAL:
+        print "-I- Exited"
+        if USE_SERIAL:
             self.ser.close()
 
     def on_frame(self, controller):
@@ -87,11 +84,36 @@ class LeapListener(Leap.Listener):
                 yaw = hand.direction.yaw
                 roll = hand.palm_normal.roll
 
-                # 4x4 affine transform matrix
-                transform_matrix = np.matrix([[np.cos(yaw) * np.cos(pitch), np.cos(pitch) * np.sin(yaw), -np.sin(pitch), 0],
-                                              [np.cos(yaw) * np.sin(pitch) * np.sin(roll) - np.sin(yaw) * np.cos(roll), np.cos(yaw) * np.cos(roll) + np.sin(roll) * np.sin(yaw) * np.sin(pitch), np.cos(pitch) * np.sin(roll), 0],
-                                              [np.cos(yaw) * np.sin(pitch) * np.cos(roll) + np.sin(yaw) * np.sin(roll), -np.cos(yaw) * np.sin(roll) + np.cos(roll) * np.sin(yaw) * np.sin(pitch), np.cos(pitch) * np.cos(roll), 0],
-                                              [0, 0, 0, 1]])
+                # 4x4 affine transform matrix, listed by row entry for easier reading
+                transform_matrix = np.matrix([
+                    [
+                        np.cos(yaw) * np.cos(pitch),
+                        np.cos(pitch) * np.sin(yaw),
+                        -np.sin(pitch),
+                        0
+                    ],
+                    
+                    [
+                        np.cos(yaw) * np.sin(pitch) * np.sin(roll) - np.sin(yaw) * np.cos(roll),
+                        np.cos(yaw) * np.cos(roll) + np.sin(roll) * np.sin(yaw) * np.sin(pitch),
+                        np.cos(pitch) * np.sin(roll),
+                        0
+                    ],
+
+                    [
+                        np.cos(yaw) * np.sin(pitch) * np.cos(roll) + np.sin(yaw) * np.sin(roll),
+                        -np.cos(yaw) * np.sin(roll) + np.cos(roll) * np.sin(yaw) * np.sin(pitch),
+                        np.cos(pitch) * np.cos(roll),
+                        0
+                    ],
+                    
+                    [
+                        0,
+                        0,
+                        0,
+                        1
+                    ]
+                ])
 
                 # Multiply transform matrix with end-effector joint position, add position of end-effector, add height of 'home' position to z-coordinate to compensate
                 # Equation: transform_matrix * PLATFORM_POSITIONS[i].T + [x, -z, y + home, 0].T = effector_pos
@@ -105,19 +127,18 @@ class LeapListener(Leap.Listener):
                     # Dims:          ( 3 x 1 )      ( 3 x 1 )      ( 1 x 1 )       ( 1 x 1 )
                     actuator_lengths.append(np.linalg.norm(effector_pos[:3,:] - BASE_POS[i].T) - MIN_ACTUATOR_LEN)
 
-                # Assemble into serial output string
-                ser_string = assemble_serial_output(actuator_lengths)
+                # Assemble actuator lengths into a serial output string (comma delimited, angle bracket enclosed, no spacing)
+                ser_string = ''.join(('<', ','.join([str(int(l)) for l in actuator_lengths]), '>'))
 
                 # Limit output rate, print and send string
                 if self.frame_count > FRAME_RATE:
                     print ser_string  # for debug; unable to open serial monitor with script running
-
-                    if not NO_SERIAL:
+                    if USE_SERIAL:
                         try:
                             self.ser.write(ser_string)
                         except serial.SerialTimeoutException:  # try to reopen the device under timeout
                             for __ in xrange(5):  # print timeout message multiple times for visibility
-                                print "Timeout detected!" 
+                                print "-W- Timeout detected!" 
                             self.ser.close()
                             self.ser.open()
 
@@ -127,15 +148,15 @@ class LeapListener(Leap.Listener):
 
 
 def main():
-
-    # Initialize listener and controller
+    '''
+    Initialize Leap Motion listener and controller.
+    Close the controller and script after receiving prompt.
+    '''
     listener = LeapListener()
     controller = Leap.Controller()
-
     controller.add_listener(listener)
 
-    # Required to keep tracking going
-    raw_input("Press enter to exit...\n")
+    raw_input("-I- Press enter to exit...\n")  # required to keep tracking going
 
     controller.remove_listener(listener)
 
