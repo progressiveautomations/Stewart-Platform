@@ -3,8 +3,7 @@ sys.dont_write_bytecode = True
 
 import Leap
 import numpy as np
-
-from serial import Serial
+import serial
 
 
 NO_SERIAL = False  # used for debugging if no Arduino present
@@ -49,7 +48,12 @@ class LeapListener(Leap.Listener):
         print "Initializing"
         self.frame_count = 0
         if not NO_SERIAL:
-            self.ser = Serial(SERIAL_PORT, BAUD_RATE)
+            self.ser = serial.Serial(
+                port=SERIAL_PORT,
+                baudrate=BAUD_RATE,
+                write_timeout=1,  # catch any input hangs (>1s)
+                # xonxoff=1  # enable software flow control; needs further investigation for noticeable difference
+            )
 
     def on_connect(self,controller):
         print "Connected"
@@ -106,10 +110,16 @@ class LeapListener(Leap.Listener):
 
                 # Limit output rate, print and send string
                 if self.frame_count > FRAME_RATE:
-                    print ser_string
+                    print ser_string  # for debug; unable to open serial monitor with script running
 
                     if not NO_SERIAL:
-                        self.ser.write(ser_string)
+                        try:
+                            self.ser.write(ser_string)
+                        except serial.SerialTimeoutException:  # try to reopen the device under timeout
+                            for __ in xrange(5):  # print timeout message multiple times for visibility
+                                print "Timeout detected!" 
+                            self.ser.close()
+                            self.ser.open()
 
                     self.frame_count = 0
                 else:
