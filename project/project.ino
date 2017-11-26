@@ -25,8 +25,10 @@ int target_len;  // length of the target string (used to generate a temp buffer)
 char match_buf[MAX_BUFFER_SIZE];  // buffer to temporarily store matched values
 
 // Variables for the translator thread (variables for finally processed input)
+long reading_sum;  // sum of multiple readings to be normalized for a final value
 int input_value;  // matched value obtained from the parser
 int input_array[NUM_MOTORS];  // final array of position values from the input
+int pos_diff;  // difference between current and desired position 
 
 // Time variables for printing
 unsigned long current_time;
@@ -37,7 +39,9 @@ boolean buffer_locked = false;
 boolean input_ready = false;
 boolean input_valid = true;
 
-int motor;  // iterator variable
+// Iterator variables
+int reading;
+int motor;
 
 /*
     Initialize pins and actuators, and set configuration values.
@@ -56,7 +60,7 @@ void setup()
     previous_time = 0; 
 
     // Initialize the pins for each actuator (slave select, direction, PWM)
-    for (motor = 0; motor < NUM_MOTORS; motor++)
+    for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
         pinMode(SS_PINS[motor], OUTPUT);
         digitalWrite(SS_PINS[motor], LOW);
@@ -74,7 +78,7 @@ void setup()
     digitalWrite(ENABLE_MOTORS_2, HIGH);
 
     // Configure each actuator motor
-    for (motor = 0; motor < NUM_MOTORS; motor++)
+    for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
         digitalWrite(SS_PINS[motor], LOW);
         SPI.transfer(lowByte(CONFIG_WORD));
@@ -89,7 +93,7 @@ void setup()
     // For safety, set initial actuator settings and speed to 0  
     moveAll(RETRACT);
     delay(RESET_DELAY);
-    for (motor = 0; motor < NUM_MOTORS; motor++)
+    for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
         desired_pos[motor] = 0;
         pwm[motor] = 0;
@@ -133,6 +137,11 @@ void loop()
 
         previous_time = current_time;
     }
+    // moveOne(6, RETRACT);
+    // delay(2000);
+    // moveOne(6, EXTEND);
+    // delay(2000);
+    // moveAll(RETRACT);
 }
 
 /*
@@ -184,7 +193,7 @@ void parseInput()
         {   
             input_valid = true;
             input_ready = false; // only flag true after input is parsed and valid
-            for (motor = 0; motor < NUM_MOTORS; motor++)
+            for (motor = 0; motor < NUM_MOTORS; ++motor)
             {
                 input_value = atoi(ms.GetCapture(match_buf, motor));
                 if (MIN_POS <= input_value <= MAX_POS)
@@ -218,9 +227,16 @@ void parseInput()
 void translateInput()
 {
     // Read potentiometer positions and scale them to [0, 1023]
-    for (motor = 0; motor < NUM_MOTORS; motor++)
+    for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
-        pos[motor] = map(analogRead(POT_PINS[motor]),
+        // Normalize value over multiple readings
+        reading_sum = 0;
+        for (reading = 0; reading < NUM_READINGS; ++reading)
+        {
+            reading_sum += analogRead(POT_PINS[motor]);
+        }
+
+        pos[motor] = map(reading_sum / NUM_READINGS,
                          ZERO_POS[motor], END_POS[motor],
                          MIN_POS, MAX_POS);
     }
@@ -228,16 +244,16 @@ void translateInput()
     // If a valid input is ready for processing, set it as the next desired position
     if (input_ready)
     {
-        for (motor = 0; motor < NUM_MOTORS; motor++)
+        for (motor = 0; motor < NUM_MOTORS; ++motor)
         {
             desired_pos[motor] = input_array[motor];
         }
     }
 
     // Check actuator positions and send movement commands as needed
-    for (motor = 0; motor < NUM_MOTORS; motor++)
+    for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
-        if (abs(pos[motor] - desired_pos[motor]) <= POSITION_TOLERANCE)
+        if (abs(pos[motor] == desired_pos[motor]))
         {
             at_correct_pos[motor] = true;
             pwm[motor] = 0;
@@ -249,7 +265,22 @@ void translateInput()
 
         if (!at_correct_pos[motor])
         {
-            if (pos[motor] > desired_pos[motor])  // extended too far
+            pos_diff = pos[motor] - desired_pos[motor];
+
+            // Get PWM value for the actuator movement
+            if (pos_diff <= POSITION_TOLERANCE)
+            {
+                pwm[motor] = 20;
+            }
+            else
+            {
+                pwm[motor] = map(abs(pos_diff),
+                             MIN_POS, MAX_POS,
+                             0, 100);  // limit PWM to 100 (vs. 255)
+            }
+
+            // Get the direction for the actuator movement
+            if (pos_diff > 0)  // extended too far
             {
                 dir[motor] = RETRACT;
             }
@@ -258,9 +289,7 @@ void translateInput()
                 dir[motor] = EXTEND;
             }
 
-            pwm[motor] = map(abs(pos[motor] - desired_pos[motor]),
-                             MIN_POS, MAX_POS,
-                             0, 100);
+            getDir(motor);
         }
 
         digitalWrite(DIR_PINS[motor], dir[motor]);
@@ -275,12 +304,29 @@ void translateInput()
 */
 void printMotorInfo(int pins[])
 {
-    for (motor = 0; motor < NUM_MOTORS; motor++)
+    for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
         Serial.print(pins[motor]);
         Serial.print(" ");
     }
     Serial.println("");
+}
+
+/*
+    Set the direction to move an actuator (EXTEND/RETRACT).
+
+    @param motor: actuator motor number to move
+*/
+void getDir(int motor)
+{
+    if (pos[motor] > desired_pos[motor])  // extended too far
+    {
+        dir[motor] = RETRACT;
+    }
+    else  // retracted too far
+    {
+        dir[motor] = EXTEND;
+    }
 }
 
 /*
@@ -290,7 +336,7 @@ void printMotorInfo(int pins[])
 */
 void moveAll(MotorDirection dir)
 {
-    for (motor = 0; motor < NUM_MOTORS; motor++)
+    for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
         digitalWrite(DIR_PINS[motor - 1], dir);
         analogWrite(PWM_PINS[motor - 1], MAX_POS);
@@ -319,7 +365,7 @@ void moveOne(int motor, MotorDirection dir)
 void calibrateAll()
 {
     // Read potentiometer positions
-    for (motor = 0; motor < NUM_MOTORS; motor++)
+    for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
         pos[motor] = analogRead(POT_PINS[motor]);
     }

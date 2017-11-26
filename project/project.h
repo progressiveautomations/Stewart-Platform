@@ -46,11 +46,12 @@ typedef enum MotorDirection  // to clarify the direction in which actuators move
 #define PRINT_INTERVAL 2000  // minimum time (ms) between printing serial info
 #define INPUT_INTERVAL 100  // interval (ms) for input thread
 #define PARSER_INTERVAL 500  // interval (ms) for parser thread
-#define TRANSLATOR_INTERVAL 1000 // interval (ms) for translation thread 
+#define TRANSLATOR_INTERVAL 500 // interval (ms) for translation thread 
 
 // Serial input parameters
 #define MAX_BUFFER_SIZE 31  // 4 bytes per position (6 digits), 7 for limiter characters
 #define INPUT_TRIGGER 10  // number of characters in the input queue before activating parsing
+#define NUM_READINGS 100 // number of analog readings to normalize to acquire position
 const char START_CHAR = '<';
 const char SENTINEL_CHAR = '>';
 const char DELIMITER_CHAR = ',';
