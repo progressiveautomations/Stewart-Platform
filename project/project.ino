@@ -179,13 +179,14 @@ void loop() {
 void MySerialEvent() {
 	bool valid_data = true;
 	//Test Manual Control Mode
+	/*
 	for (MotorCounter = 0; MotorCounter < NUM_MOTORS; MotorCounter++) {
 		CorrectPosition[MotorCounter] = false; // originally 0
-	}
+	}*/
 
 	IndexSerialInput = 0;
 	// 6 ints at 2 bytes each
-	while (Serial.available() > 12 && IndexSerialInput < NUM_MOTORS) {
+	while (Serial.available() > 0 && IndexSerialInput < NUM_MOTORS) {
 
 		// Parse high and low bytes, reassemble into int
 		byte highb = Serial.read();
@@ -240,7 +241,7 @@ void NormalOp()
 	}
 
 	// Trigger our serial function if enough chars are available
-	if (Serial.available() > 0) {
+	if (Serial.available() > 12) { // 6 2-byte ints
 		MySerialEvent();
 	}
 	CurrentTime = millis();

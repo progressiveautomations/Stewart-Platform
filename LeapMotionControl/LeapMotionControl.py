@@ -2,11 +2,12 @@ import sys
 import serial
 import Leap
 import numpy as np
+import time
 
 # Dependencies: numpy, pyserial
 
-NO_SERIAL = True # used for debugging if no Arduino present
-FRAME_RATE = 10 # Number of frames to skip before sending/printing data    
+NO_SERIAL = False # used for debugging if no Arduino present
+FRAME_RATE = 1 # Number of frames to skip before sending/printing data    
 
 # Serial-related constants
 SERIAL_PORT = "COM3"
@@ -49,7 +50,8 @@ def assemble_serial_output(actuators):
     :rtype: str
     """
     ser_string = []
-    for i in actuator_pos:
+    print actuators
+    for i in actuators:
         # Converts float64 to int, clamps between MIN and MAX, splits into low and high byte, adds to list
         ser_string.extend(list(divmod(max(MIN_EXTENSION, min(int(i), MAX_EXTENSION)), 256)))
 
@@ -62,7 +64,7 @@ class LeapListener(Leap.Listener):
         print "Initializing"
         self.frame_count = 0
         if not NO_SERIAL:
-            self.ser = serial.Serial(SERIAL_PORT, BAUD_RATE)
+            self.ser = serial.Serial(SERIAL_PORT, BAUD_RATE, write_timeout=0)
 
     def on_connect(self,controller):
         print "Connected"
@@ -118,27 +120,37 @@ class LeapListener(Leap.Listener):
                 ser_string = assemble_serial_output(actuator_lengths)
 
                 # Limit output rate, print and send string
-                if self.frame_count > FRAME_RATE:
-                    print ser_string
+               # if self.frame_count > FRAME_RATE:
+                    # print ser_string
 
-                    if not NO_SERIAL:
-                        self.ser.write(ser_string)
+                if not NO_SERIAL:
+                    self.ser.write(ser_string)
 
-                    self.frame_count = 0
-                else:
-                    self.frame_count += 1
+                   # self.frame_count = 0
+               # else:
+                   # self.frame_count += 1
 
 def main():
 
     # Initialize listener and controller
     listener = LeapListener()
     controller = Leap.Controller()
-
-    controller.add_listener(listener)
+    frame_count = 0
+    # controller.add_listener(listener)
 
     # Required to keep tracking going
-    raw_input("Press enter to exit...\n")
+    #raw_input("Press enter to exit...\n")
+    listener.on_init(controller)
+    try:
+        while True:
 
+            listener.on_frame(controller);
+            time.sleep(0.4)
+
+            #print listener.ser.readline();
+
+    except KeyboardInterrupt:
+        pass
     controller.remove_listener(listener)
 
 if __name__ == "__main__":
