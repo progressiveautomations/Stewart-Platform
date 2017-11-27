@@ -134,9 +134,7 @@ void loop()
 {
     wdt_reset();  // reset the watchdog timer (last loop successful)
     controller.run();  // execute the threads
-
-    // // Print position and PWM info
-    
+    // printPlatformInfo();
 }
 
 
@@ -148,11 +146,13 @@ void getInput()
 {
     if (!buffer_locked)
     {
+        // Add characters from the input buffer (stored as a FIFO queue)
         while (Serial.available() > 0)
         {
             char_queue.add(Serial.read());
         }
 
+        // Trim the queue to a certain size (remove oldest entries first)
         if (char_queue.size() > MAX_BUFFER_SIZE)
         {
             buffer_locked = true;
@@ -183,7 +183,7 @@ void parseInput()
 
         // Convert string to char array
         target_len = target_string.length();
-        char target_buf[target_len + 1];
+        char target_buf[target_len + 1];  // extra entry for terminating '\0'
         target_string.toCharArray(target_buf, target_len);
 
         // Parse and store the input if it is valid
@@ -209,13 +209,13 @@ void parseInput()
                 input_ready = input_valid;
            }
         }
-        else
-        {
-            // Print the failed result for debug
-            Serial.print("Unable to properly parse input: ");
-            Serial.print(target_buf);
-            Serial.println("");
-        }
+        // else
+        // {
+        //     // Print the failed result for debug
+        //     Serial.print("Unable to properly parse input: ");
+        //     Serial.print(target_buf);
+        //     Serial.println("");
+        // }
 
         target_string = "";  // reset for the next iteration
     }
