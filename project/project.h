@@ -4,11 +4,15 @@
 */
 #pragma once
 
+#include <avr/wdt.h>
+#include <stdint.h>
+
 #include <LinkedList.h>
 #include <Regexp.h>
 #include <SPI.h>
 #include <StaticThreadController.h>
 #include <Thread.h>
+
 #include "HWDefs.h"
 
 // Platform parameters and bounds
@@ -36,7 +40,7 @@ typedef enum MotorDirection  // to clarify the direction in which actuators move
 };
 
 // Serial/SPI configuration parameters (https://www.arduino.cc/en/Reference/SPI)
-#define BAUD_RATE 115200
+#define BAUD_RATE 9600
 #define BIT_ORDER LSBFIRST
 #define DATA_MODE SPI_MODE1  // clock polarity = low, phase = high 
 #define PRINT_INTERVAL 2000  // minimum time (ms) between printing serial info

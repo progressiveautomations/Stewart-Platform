@@ -1,5 +1,16 @@
 #include "project.h"
 
+// Turn off the watchdog timer during program startup to avoid timeout after a system reset
+uint8_t mcusr_mirror __attribute__ ((section(".noinit")));
+void get_mcusr(void) __attribute__((naked)) __attribute__((section(".init3")));
+void get_mcusr(void)
+{
+    mcusr_mirror = MCUSR;
+    MCUSR = 0;
+    wdt_disable();
+}
+
+
 // PWM and direction value variables
 uint16_t pwm[NUM_MOTORS];  // maximum of 255, but 16-bit for input consistency
 MotorDirection dir[NUM_MOTORS];
@@ -13,7 +24,7 @@ boolean at_correct_pos[NUM_MOTORS];
 Thread input_thread = Thread();  // to get data from the RX buffer
 Thread parser_thread = Thread();  // to parse data in the RX buffer into input
 Thread translator_thread = Thread();  // to translate input into actuator movement
-StaticThreadController<3> controller (&input_thread, &parser_thread, &translator_thread);
+StaticThreadController<3> controller(&input_thread, &parser_thread, &translator_thread);
 
 // Input thread variables
 LinkedList<char> char_queue; // actively managed backlog of chars from the RX buffer
@@ -53,6 +64,7 @@ uint8_t reading;
 void setup()
 {
     Serial.begin(BAUD_RATE);
+    wdt_enable(WDTO_1S);  // allow the watchdog timer to reset the board if it hangs for >1s
 
     // Initialize SPI configuration 
     SPI.begin();
@@ -120,23 +132,11 @@ void setup()
 */
 void loop()
 {
-    controller.run();
+    wdt_reset();  // reset the watchdog timer (last loop successful)
+    controller.run();  // execute the threads
 
-    // Print position and PWM info
-    current_time = millis();
-    if (current_time - previous_time > PRINT_INTERVAL)
-    {
-        Serial.println("Desired Positions: ");
-        printMotorInfo(desired_pos);
-
-        Serial.println("Current Positions: ");
-        printMotorInfo(pos);
-
-        Serial.println("PWM Values");
-        printMotorInfo(pwm);
-
-        previous_time = current_time;
-    }
+    // // Print position and PWM info
+    
 }
 
 
@@ -303,6 +303,27 @@ void printMotorInfo(uint16_t pins[])
         Serial.print(" ");
     }
     Serial.println("");
+}
+
+/*
+    Print position and PWM info for all actuators if within a given interval. 
+*/
+void printPlatformInfo()
+{
+    current_time = millis();
+    if (current_time - previous_time > PRINT_INTERVAL)
+    {
+        Serial.println("Desired Positions: ");
+        printMotorInfo(desired_pos);
+
+        Serial.println("Current Positions: ");
+        printMotorInfo(pos);
+
+        Serial.println("PWM Values");
+        printMotorInfo(pwm);
+
+        previous_time = current_time;
+    }
 }
 
 
