@@ -1,14 +1,14 @@
 #include "project.h"
 
 // Turn off the watchdog timer during program startup to avoid timeout after a system reset
-uint8_t mcusr_mirror __attribute__ ((section(".noinit")));
-void get_mcusr(void) __attribute__((naked)) __attribute__((section(".init3")));
-void get_mcusr(void)
-{
-    mcusr_mirror = MCUSR;
-    MCUSR = 0;
-    wdt_disable();
-}
+// uint8_t mcusr_mirror __attribute__ ((section(".noinit")));
+// void get_mcusr(void) __attribute__((naked)) __attribute__((section(".init3")));
+// void get_mcusr(void)
+// {
+//     mcusr_mirror = MCUSR;
+//     MCUSR = 0;
+//     wdt_disable();
+// }
 
 
 // PWM and direction value variables
@@ -64,7 +64,7 @@ uint8_t reading;
 void setup()
 {
     Serial.begin(BAUD_RATE);
-    wdt_enable(WDTO_1S);  // allow the watchdog timer to reset the board if it hangs for >1s
+    // wdt_enable(WDTO_1S);  // allow the watchdog timer to reset the board if it hangs for >1s
 
     // Initialize SPI configuration 
     SPI.begin();

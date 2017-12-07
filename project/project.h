@@ -4,8 +4,8 @@
 */
 #pragma once
 
-#include <avr/wdt.h>
-#include <stdint.h>
+// #include <avr/wdt.h>
+// #include <stdint.h>
 
 #include <LinkedList.h>
 #include <Regexp.h>
