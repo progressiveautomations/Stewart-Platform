@@ -4,14 +4,6 @@
 */
 #pragma once
 
-// L9958 slave select pins for SPI
-#define SS_PIN_1 42
-#define SS_PIN_2 40
-#define SS_PIN_3 38
-#define SS_PIN_4 36
-#define SS_PIN_5 34
-#define SS_PIN_6 32
-
 // L9958 Direction pins
 #define DIR_PIN_1 43
 #define DIR_PIN_2 41
@@ -39,25 +31,3 @@
 // L9958 Enable for all motors (grouped as such due to different H-bridge controllers)
 #define ENABLE_MOTORS_1 24
 #define ENABLE_MOTORS_2 25
-
-/******* Set up L9958 chips *********
-' L9958 Config Register
-' Bit
-'0 - RES
-'1 - DR - reset
-'2 - CL_1 - curr limit
-'3 - CL_2 - curr_limit
-'4 - RES
-'5 - RES
-'6 - RES
-'7 - RES
-'8 - VSR - voltage slew rate (1 enables slew limit, 0 disables)
-'9 - ISR - current slew rate (1 enables slew limit, 0 disables)
-'10 - ISR_DIS - current slew disable
-'11 - OL_ON - open load enable
-'12 - RES
-'13 - RES
-'14 - 0 - always zero
-'15 - 0 - always zero
-*/
-const unsigned int CONFIG_WORD = 0b0000010000001100;

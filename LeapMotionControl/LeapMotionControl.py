@@ -7,7 +7,7 @@ import serial
 import time
 
 # Leap Motion constants
-FRAME_RATE = 1  # number of frames to skip before sending/printing data
+FRAME_RATE = 10  # number of frames to skip before sending/printing data
 
 # Serial constants
 USE_SERIAL = True  # set False for debugging if no Arduino present
@@ -132,19 +132,24 @@ class LeapListener(Leap.Listener):
                 # Include line endings for flexibility on parser side (i.e. if matching string with line endings)
                 ser_string = ''.join(('<', ','.join([str(int(l)) for l in actuator_lengths]), '>\n\r'))
 
-                # Print and send the input string
-                print ser_string.strip()  # exclude line endings when printing for debug
-                if USE_SERIAL:
-                    try:
-                        self.ser.write(ser_string)
-                    except serial.SerialTimeoutException, serial.SerialException:  # try to reopen the device under timeout
-                        for __ in xrange(5):  # print timeout message multiple times for visibility
-                            print "-W- Timeout or port closed detected!"
+                # Limit the output rate, print and send the input string
+                if self.frame_count > FRAME_RATE:
+                    print ser_string.strip()  # exclude line endings when printing for debug
+                    if USE_SERIAL:
                         try:
-                            self.ser.close()
-                            self.ser.open()
-                        except serial.SerialException:
-                            pass
+                            self.ser.write(ser_string)
+                        except serial.SerialTimeoutException, serial.SerialException:  # try to reopen the device under timeout
+                            for __ in xrange(5):  # print timeout message multiple times for visibility
+                                print "-W- Timeout or port closed detected!"
+                            try:
+                                self.ser.close()
+                                self.ser.open()
+                            except serial.SerialException:
+                                pass
+
+                    self.frame_count = 0
+                else:
+                    self.frame_count += 1
 
 
 def main():

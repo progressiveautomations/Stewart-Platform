@@ -1,22 +1,11 @@
 #include "project.h"
 
-// Turn off the watchdog timer during program startup to avoid timeout after a system reset
-// uint8_t mcusr_mirror __attribute__ ((section(".noinit")));
-// void get_mcusr(void) __attribute__((naked)) __attribute__((section(".init3")));
-// void get_mcusr(void)
-// {
-//     mcusr_mirror = MCUSR;
-//     MCUSR = 0;
-//     wdt_disable();
-// }
-
-
 // PWM and direction value variables
 uint16_t pwm[NUM_MOTORS];  // maximum of 255, but 16-bit for input consistency
 MotorDirection dir[NUM_MOTORS];
 
 // Position variables (extreme values from manual calibration)
-uint16_t pos[NUM_MOTORS];
+int16_t pos[NUM_MOTORS];
 uint16_t desired_pos[NUM_MOTORS];
 boolean at_correct_pos[NUM_MOTORS];
 
@@ -36,10 +25,10 @@ uint8_t target_len;  // length of the target string (used to generate a temp buf
 char match_buf[MAX_BUFFER_SIZE];  // buffer to temporarily store matched values
 
 // Translator thread variables
-unsigned long reading_sum;  // sum of multiple readings to be normalized for a final value
+int32_t reading_sum;  // sum of multiple readings to be normalized for a final value
 uint16_t input_value;  // matched value obtained from the parser
 uint16_t input_array[NUM_MOTORS];  // final array of position values from the input
-uint16_t pos_diff;  // difference between current and desired position
+int16_t pos_diff;  // difference between current and desired position
 
 // Time variables (for printing)
 unsigned long current_time;
@@ -64,20 +53,12 @@ uint8_t reading;
 void setup()
 {
     Serial.begin(BAUD_RATE);
-    // wdt_enable(WDTO_1S);  // allow the watchdog timer to reset the board if it hangs for >1s
 
-    // Initialize SPI configuration 
-    SPI.begin();
-    SPI.setBitOrder(BIT_ORDER);
-    SPI.setDataMode(DATA_MODE);
     previous_time = 0; 
 
     // Initialize the pins for each actuator (slave select, direction, PWM)
     for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
-        pinMode(SS_PINS[motor], OUTPUT);
-        digitalWrite(SS_PINS[motor], LOW);
-        
         pinMode(DIR_PINS[motor], OUTPUT);
         
         pinMode(PWM_PINS[motor], OUTPUT);
@@ -89,15 +70,6 @@ void setup()
     pinMode(ENABLE_MOTORS_2, OUTPUT);
     digitalWrite(ENABLE_MOTORS_1, HIGH);
     digitalWrite(ENABLE_MOTORS_2, HIGH);
-
-    // Configure each actuator motor
-    for (motor = 0; motor < NUM_MOTORS; ++motor)
-    {
-        digitalWrite(SS_PINS[motor], LOW);
-        SPI.transfer(lowByte(CONFIG_WORD));
-        SPI.transfer(highByte(CONFIG_WORD));
-        digitalWrite(SS_PINS[motor], HIGH);
-    }
 
     // Initialize all actuator motors
     digitalWrite(ENABLE_MOTORS_1, LOW);
@@ -111,9 +83,6 @@ void setup()
         desired_pos[motor] = 0;
         pwm[motor] = 0;
     }
-
-    // @TODO:
-    // Calculate actuator lengths? Automatic calibration?
 
     // Configure threads for serial input processing
     input_thread.setInterval(INPUT_INTERVAL);
@@ -132,9 +101,8 @@ void setup()
 */
 void loop()
 {
-    // wdt_reset();  // reset the watchdog timer (last loop successful)
     controller.run();  // execute the threads
-    printPlatformInfo();
+    // printPlatformInfo();
 }
 
 
@@ -209,13 +177,13 @@ void parseInput()
                 input_ready = input_valid;
            }
         }
-        else
-        {
-            // Print the failed result for debug
-            Serial.print("Unable to properly parse input: ");
-            Serial.print(target_buf);
-            Serial.println("");
-        }
+        // else
+        // {
+        //     // Print the failed result for debug
+        //     Serial.print("Unable to properly parse input: ");
+        //     Serial.print(target_buf);
+        //     Serial.println("");
+        // }
 
         target_string = "";  // reset for the next iteration
     }
@@ -230,17 +198,7 @@ void translateInput()
     // Read potentiometer positions and scale them to the Arduino bounds
     for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
-        // // Normalize the value over multiple readings
-        // reading_sum = 0;
-        // for (reading = 0; reading < NUM_READINGS; ++reading)
-        // {
-        //     reading_sum += analogRead(POT_PINS[motor]);
-        // }
-
-        // pos[motor] = map(reading_sum / NUM_READINGS,
-        //                  ZERO_POS[motor], END_POS[motor],
-        //                  MIN_POS, MAX_POS);
-        pos[motor] = map(analogRead(POT_PINS[motor]),
+        pos[motor] = map(normalizeAnalogRead(motor),
                          ZERO_POS[motor], END_POS[motor],
                          MIN_POS, MAX_POS);
     }
@@ -267,7 +225,7 @@ void translateInput()
         else
         {
             // Set a slower PWM if the actuator is close to the desired position
-            if (pos_diff <= POSITION_TOLERANCE)
+            if (abs(pos_diff) <= POSITION_TOLERANCE)
             {
                 pwm[motor] = PWM_NEAR;
             }
@@ -293,40 +251,56 @@ void translateInput()
 }
 
 
+// /*
+//     Print piece of info for all actuators.
+
+//     @param pins: pin array for the info to print (position, PWM, etc.)
+// */
+// void printMotorInfo(int16_t pins[])
+// {
+//     for (motor = 0; motor < NUM_MOTORS; ++motor)
+//     {
+//         Serial.print(pins[motor]);
+//         Serial.print(" ");
+//     }
+//     Serial.println("");
+// }
+
+// /*
+//     Print position and PWM info for all actuators if within a given interval. 
+// */
+// void printPlatformInfo()
+// {
+//     current_time = millis();
+//     if (current_time - previous_time > PRINT_INTERVAL)
+//     {
+//         Serial.println("Desired Positions: ");
+//         printMotorInfo(desired_pos);
+
+//         Serial.println("Current Positions: ");
+//         printMotorInfo(pos);
+
+//         Serial.println("PWM Values");
+//         printMotorInfo(pwm);
+
+//         previous_time = current_time;
+//     }
+// }
+
 /*
-    Print piece of info for all actuators.
+    Get an average analogRead value over a certain number of readings
 
-    @param pins: pin array for the info to print (position, PWM, etc.)
+    @param motor: actuator motor number to move (0-5)
+    @return: average reading (int, may be signed)
 */
-void printMotorInfo(int pins[])
+int16_t normalizeAnalogRead(uint8_t motor)
 {
-    for (motor = 0; motor < NUM_MOTORS; ++motor)
+    reading_sum = 0;
+    for (reading = 0; reading < NUM_READINGS; ++reading)
     {
-        Serial.print(pins[motor]);
-        Serial.print(" ");
+        reading_sum += analogRead(POT_PINS[motor]);
     }
-    Serial.println("");
-}
-
-/*
-    Print position and PWM info for all actuators if within a given interval. 
-*/
-void printPlatformInfo()
-{
-    current_time = millis();
-    if (current_time - previous_time > PRINT_INTERVAL)
-    {
-        Serial.println("Desired Positions: ");
-        printMotorInfo(desired_pos);
-
-        Serial.println("Current Positions: ");
-        printMotorInfo(pos);
-
-        Serial.println("PWM Values");
-        printMotorInfo(pwm);
-
-        previous_time = current_time;
-    }
+    return reading_sum / NUM_READINGS;
 }
 
 
@@ -339,8 +313,8 @@ void moveAll(MotorDirection dir)
 {
     for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
-        digitalWrite(DIR_PINS[motor - 1], dir);
-        analogWrite(PWM_PINS[motor - 1], MAX_PWM);
+        digitalWrite(DIR_PINS[motor], dir);
+        analogWrite(PWM_PINS[motor], MAX_PWM);
     }
 }
 
@@ -348,27 +322,49 @@ void moveAll(MotorDirection dir)
     Moves one actuator in a given direction.
     Prints the raw analogRead position for the call.
 
-    @param motor: actuator motor number to move
+    @param motor: actuator motor number to move (0-5)
     @param dir: direction (EXTEND/RETRACT) for the actuator
 */
 void moveOne(uint8_t motor, MotorDirection dir)
 {
-    digitalWrite(DIR_PINS[motor - 1], dir);
-    analogWrite(PWM_PINS[motor - 1], MAX_PWM);
-    Serial.println(analogRead(POT_PINS[motor - 1]));
+    digitalWrite(DIR_PINS[motor], dir);
+    analogWrite(PWM_PINS[motor], MAX_PWM);
+    Serial.println(analogRead(POT_PINS[motor]));
 }
 
-/*
-    Calibration routine for all actuators.
+// /*
+//     Calibration routine for all actuators (put it at the end of setup when necessary).
+//     Make sure this is done with the platform disassembled to prevent mechanical failure.
+// */
+// void calibrateAll()
+// {
+//     int16_t max_readings[6];
+//     int16_t min_readings[6];
 
-    @TODO: finish implementation.
-*/
-void calibrateAll()
-{
-    // Read potentiometer positions
-    for (motor = 0; motor < NUM_MOTORS; ++motor)
-    {
-        pos[motor] = analogRead(POT_PINS[motor]);
-    }
-    printMotorInfo(pos);
-}
+//     for (motor = 0; motor < NUM_MOTORS; ++motor)
+//     {
+//         // Start with extension
+//         digitalWrite(DIR_PINS[motor], EXTEND);
+//         analogWrite(PWM_PINS[motor], MAX_PWM);
+//         delay(RESET_DELAY);
+
+//         // Stop the extension, get a normalized analog reading
+//         analogWrite(PWM_PINS[motor], 0);
+//         max_readings[motor] = normalizeAnalogRead(motor);
+
+//         // Finish with retraction
+//         digitalWrite(DIR_PINS[motor], RETRACT);
+//         analogWrite(PWM_PINS[motor], MAX_PWM);
+//         delay(RESET_DELAY);
+
+//         // Stop the extension, get a normalized analog reading
+//         analogWrite(PWM_PINS[motor], 0);
+//         min_readings[motor] = normalizeAnalogRead(motor);
+
+//         // Print results
+//         Serial.print(min_readings[motor]);
+//         Serial.print(" ");
+//         Serial.print(max_readings[motor]);
+//         Serial.print("\n");
+//     }
+// }
