@@ -129,21 +129,21 @@ class LeapListener(Leap.Listener):
                     actuator_lengths.append(np.linalg.norm(effector_pos[:3,:] - BASE_POS[i].T) - MIN_ACTUATOR_LEN)
 
                 # Assemble actuator lengths into a serial output string (comma delimited, angle bracket enclosed, no spacing)
-                ser_string = ''.join(('<', ','.join([str(int(l)) for l in actuator_lengths]), '>'))
+                # Include line endings for flexibility on parser side (i.e. if matching string with line endings)
+                ser_string = ''.join(('<', ','.join([str(int(l)) for l in actuator_lengths]), '>\n\r'))
 
-                # Limit output rate, print and send string
-                print ser_string
+                # Print and send the input string
+                print ser_string.strip()  # exclude line endings when printing for debug
                 if USE_SERIAL:
                     try:
                         self.ser.write(ser_string)
-                    except serial.SerialTimeoutException:  # try to reopen the device under timeout
+                    except serial.SerialTimeoutException, serial.SerialException:  # try to reopen the device under timeout
                         for __ in xrange(5):  # print timeout message multiple times for visibility
-                            print "-W- Timeout detected!"
-                        try: 
+                            print "-W- Timeout or port closed detected!"
+                        try:
                             self.ser.close()
                             self.ser.open()
                         except serial.SerialException:
-                            print "-W- Serial port closed!"
                             pass
 
 
