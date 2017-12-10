@@ -36,7 +36,7 @@ uint8_t target_len;  // length of the target string (used to generate a temp buf
 char match_buf[MAX_BUFFER_SIZE];  // buffer to temporarily store matched values
 
 // Translator thread variables
-long reading_sum;  // sum of multiple readings to be normalized for a final value
+unsigned long reading_sum;  // sum of multiple readings to be normalized for a final value
 uint16_t input_value;  // matched value obtained from the parser
 uint16_t input_array[NUM_MOTORS];  // final array of position values from the input
 uint16_t pos_diff;  // difference between current and desired position
@@ -132,9 +132,9 @@ void setup()
 */
 void loop()
 {
-    wdt_reset();  // reset the watchdog timer (last loop successful)
+    // wdt_reset();  // reset the watchdog timer (last loop successful)
     controller.run();  // execute the threads
-    // printPlatformInfo();
+    printPlatformInfo();
 }
 
 
@@ -171,7 +171,7 @@ void getInput()
 */
 void parseInput()
 {
-    if (!buffer_locked && char_queue.size() > INPUT_TRIGGER)
+    if (!buffer_locked && char_queue.size() >= INPUT_TRIGGER)
     {
         // Empty the queue into the string
         buffer_locked = true;
@@ -209,13 +209,13 @@ void parseInput()
                 input_ready = input_valid;
            }
         }
-        // else
-        // {
-        //     // Print the failed result for debug
-        //     Serial.print("Unable to properly parse input: ");
-        //     Serial.print(target_buf);
-        //     Serial.println("");
-        // }
+        else
+        {
+            // Print the failed result for debug
+            Serial.print("Unable to properly parse input: ");
+            Serial.print(target_buf);
+            Serial.println("");
+        }
 
         target_string = "";  // reset for the next iteration
     }
@@ -230,14 +230,17 @@ void translateInput()
     // Read potentiometer positions and scale them to the Arduino bounds
     for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
-        // Normalize the value over multiple readings
-        reading_sum = 0;
-        for (reading = 0; reading < NUM_READINGS; ++reading)
-        {
-            reading_sum += analogRead(POT_PINS[motor]);
-        }
+        // // Normalize the value over multiple readings
+        // reading_sum = 0;
+        // for (reading = 0; reading < NUM_READINGS; ++reading)
+        // {
+        //     reading_sum += analogRead(POT_PINS[motor]);
+        // }
 
-        pos[motor] = map(reading_sum / NUM_READINGS,
+        // pos[motor] = map(reading_sum / NUM_READINGS,
+        //                  ZERO_POS[motor], END_POS[motor],
+        //                  MIN_POS, MAX_POS);
+        pos[motor] = map(analogRead(POT_PINS[motor]),
                          ZERO_POS[motor], END_POS[motor],
                          MIN_POS, MAX_POS);
     }
@@ -295,7 +298,7 @@ void translateInput()
 
     @param pins: pin array for the info to print (position, PWM, etc.)
 */
-void printMotorInfo(uint16_t pins[])
+void printMotorInfo(int pins[])
 {
     for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
@@ -337,7 +340,7 @@ void moveAll(MotorDirection dir)
     for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
         digitalWrite(DIR_PINS[motor - 1], dir);
-        analogWrite(PWM_PINS[motor - 1], MAX_POS);
+        analogWrite(PWM_PINS[motor - 1], MAX_PWM);
     }
 }
 
@@ -351,7 +354,7 @@ void moveAll(MotorDirection dir)
 void moveOne(uint8_t motor, MotorDirection dir)
 {
     digitalWrite(DIR_PINS[motor - 1], dir);
-    analogWrite(PWM_PINS[motor - 1], MAX_POS);
+    analogWrite(PWM_PINS[motor - 1], MAX_PWM);
     Serial.println(analogRead(POT_PINS[motor - 1]));
 }
 

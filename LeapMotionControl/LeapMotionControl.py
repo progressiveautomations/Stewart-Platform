@@ -11,7 +11,7 @@ FRAME_RATE = 1  # number of frames to skip before sending/printing data
 
 # Serial constants
 USE_SERIAL = True  # set False for debugging if no Arduino present
-SERIAL_PORT = 'COM3'
+SERIAL_PORT = 'COM5'
 BAUD_RATE = 9600
 
 # Platform position matrices and constants
