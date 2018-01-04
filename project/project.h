@@ -27,19 +27,18 @@ const uint8_t POT_PINS[NUM_MOTORS] = { POT_PIN_1, POT_PIN_2, POT_PIN_3, POT_PIN_
 
 // Movement parameters
 #define RESET_DELAY 4000  // at full PWM, the actuator should fully extend/retract in 4s (6" stroke, 2.00"/s)
-#define POSITION_TOLERANCE 10  // uncertainty for which offset from desired position is acceptable
+#define POSITION_FAR_THRESHOLD 20  // uncertainty for which offset from desired position is acceptable
+#define POSITION_NEAR_THRESHOLD 5
 #define PWM_NEAR 20  // value for PWM when position is in tolerance (but not in position)
-#define PWM_FAR 100  // default PWM value; scaling is disabled in early development
+#define PWM_FAR 150  // default PWM value; scaling is disabled in early development
 typedef enum MotorDirection  // to clarify the direction in which actuators move
 {
     RETRACT = 0,
     EXTEND = 1
 };
 
-// Serial/SPI configuration parameters (https://www.arduino.cc/en/Reference/SPI)
-#define BAUD_RATE 9600
-// #define BIT_ORDER LSBFIRST
-// #define DATA_MODE SPI_MODE1  // clock polarity = low, phase = high 
+// Serial configuration parameters
+#define BAUD_RATE 9600 
 #define PRINT_INTERVAL 2000  // minimum time (ms) between printing serial info
 
 // Serial input parameters

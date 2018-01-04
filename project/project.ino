@@ -26,6 +26,7 @@ char match_buf[MAX_BUFFER_SIZE];  // buffer to temporarily store matched values
 
 // Translator thread variables
 int32_t reading_sum;  // sum of multiple readings to be normalized for a final value
+uint16_t sum_difference;
 uint16_t input_value;  // matched value obtained from the parser
 uint16_t input_array[NUM_MOTORS];  // final array of position values from the input
 int16_t pos_diff;  // difference between current and desired position
@@ -92,6 +93,8 @@ void setup()
     input_thread.onRun(getInput);
     parser_thread.onRun(parseInput);
     translator_thread.onRun(translateInput);
+
+    // calibrateAll();
 }
 
 
@@ -212,20 +215,27 @@ void translateInput()
         }
     }
 
+    // sum_difference = 0;
+    // for (motor = 0; motor < NUM_MOTORS; ++ motor)
+    // {
+    //     pos_diff = pos[motor] - desired_pos[motor];
+    //     sum_difference += abs(pos_diff);
+    // }
+
     // Check actuator positions and set movement parameters (PWM, direction) as needed
     for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
         pos_diff = pos[motor] - desired_pos[motor];
         at_correct_pos[motor] = (pos_diff == 0);
 
-        if (at_correct_pos[motor])
+        if (at_correct_pos[motor] || abs(pos_diff) <= POSITION_NEAR_THRESHOLD)
         {
             pwm[motor] = 0;
         }
         else
         {
             // Set a slower PWM if the actuator is close to the desired position
-            if (abs(pos_diff) <= POSITION_TOLERANCE)
+            if (abs(pos_diff) <= POSITION_FAR_THRESHOLD)
             {
                 pwm[motor] = PWM_NEAR;
             }
@@ -241,7 +251,7 @@ void translateInput()
             }
             else
             {
-                dir[motor] = EXTEND;
+                // dir[motor] = EXTEND;
             }
         }
 
@@ -251,41 +261,41 @@ void translateInput()
 }
 
 
-// /*
-//     Print piece of info for all actuators.
+/*
+    Print piece of info for all actuators.
 
-//     @param pins: pin array for the info to print (position, PWM, etc.)
-// */
-// void printMotorInfo(int16_t pins[])
-// {
-//     for (motor = 0; motor < NUM_MOTORS; ++motor)
-//     {
-//         Serial.print(pins[motor]);
-//         Serial.print(" ");
-//     }
-//     Serial.println("");
-// }
+    @param pins: pin array for the info to print (position, PWM, etc.)
+*/
+void printMotorInfo(int16_t pins[])
+{
+    for (motor = 0; motor < NUM_MOTORS; ++motor)
+    {
+        Serial.print(pins[motor]);
+        Serial.print(" ");
+    }
+    Serial.println("");
+}
 
-// /*
-//     Print position and PWM info for all actuators if within a given interval. 
-// */
-// void printPlatformInfo()
-// {
-//     current_time = millis();
-//     if (current_time - previous_time > PRINT_INTERVAL)
-//     {
-//         Serial.println("Desired Positions: ");
-//         printMotorInfo(desired_pos);
+/*
+    Print position and PWM info for all actuators if within a given interval. 
+*/
+void printPlatformInfo()
+{
+    current_time = millis();
+    if (current_time - previous_time > PRINT_INTERVAL)
+    {
+        Serial.println("Desired Positions: ");
+        printMotorInfo(desired_pos);
 
-//         Serial.println("Current Positions: ");
-//         printMotorInfo(pos);
+        Serial.println("Current Positions: ");
+        printMotorInfo(pos);
 
-//         Serial.println("PWM Values");
-//         printMotorInfo(pwm);
+        Serial.println("PWM Values");
+        printMotorInfo(pwm);
 
-//         previous_time = current_time;
-//     }
-// }
+        previous_time = current_time;
+    }
+}
 
 /*
     Get an average analogRead value over a certain number of readings
@@ -332,39 +342,39 @@ void moveOne(uint8_t motor, MotorDirection dir)
     Serial.println(analogRead(POT_PINS[motor]));
 }
 
-// /*
-//     Calibration routine for all actuators (put it at the end of setup when necessary).
-//     Make sure this is done with the platform disassembled to prevent mechanical failure.
-// */
-// void calibrateAll()
-// {
-//     int16_t max_readings[6];
-//     int16_t min_readings[6];
+/*
+    Calibration routine for all actuators (put it at the end of setup when necessary).
+    Make sure this is done with the platform disassembled to prevent mechanical failure.
+*/
+void calibrateAll()
+{
+    int16_t max_readings[6];
+    int16_t min_readings[6];
 
-//     for (motor = 0; motor < NUM_MOTORS; ++motor)
-//     {
-//         // Start with extension
-//         digitalWrite(DIR_PINS[motor], EXTEND);
-//         analogWrite(PWM_PINS[motor], MAX_PWM);
-//         delay(RESET_DELAY);
+    for (motor = 0; motor < NUM_MOTORS; ++motor)
+    {
+        // Start with extension
+        digitalWrite(DIR_PINS[motor], EXTEND);
+        analogWrite(PWM_PINS[motor], MAX_PWM);
+        delay(RESET_DELAY);
 
-//         // Stop the extension, get a normalized analog reading
-//         analogWrite(PWM_PINS[motor], 0);
-//         max_readings[motor] = normalizeAnalogRead(motor);
+        // Stop the extension, get a normalized analog reading
+        analogWrite(PWM_PINS[motor], 0);
+        max_readings[motor] = normalizeAnalogRead(motor);
 
-//         // Finish with retraction
-//         digitalWrite(DIR_PINS[motor], RETRACT);
-//         analogWrite(PWM_PINS[motor], MAX_PWM);
-//         delay(RESET_DELAY);
+        // Finish with retraction
+        digitalWrite(DIR_PINS[motor], RETRACT);
+        analogWrite(PWM_PINS[motor], MAX_PWM);
+        delay(RESET_DELAY);
 
-//         // Stop the extension, get a normalized analog reading
-//         analogWrite(PWM_PINS[motor], 0);
-//         min_readings[motor] = normalizeAnalogRead(motor);
+        // Stop the extension, get a normalized analog reading
+        analogWrite(PWM_PINS[motor], 0);
+        min_readings[motor] = normalizeAnalogRead(motor);
 
-//         // Print results
-//         Serial.print(min_readings[motor]);
-//         Serial.print(" ");
-//         Serial.print(max_readings[motor]);
-//         Serial.print("\n");
-//     }
-// }
+        // Print results
+        Serial.print(min_readings[motor]);
+        Serial.print(" ");
+        Serial.print(max_readings[motor]);
+        Serial.print("\n");
+    }
+}
