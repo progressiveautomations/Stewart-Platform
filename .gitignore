@@ -246,3 +246,4 @@ ModelManifest.xml
 
 project/project_AVR_MEGA2560_atmega2560.hex
 project/__vm
+.DS_Store

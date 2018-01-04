@@ -1,398 +1,229 @@
-#include <SPI.h>
 #include "HWDefs.h"
-
-//Initialize PWM value variables
-int PWM[NUM_MOTORS];
-int MaxMotorPWM;
-
-//Initialize direction value variables
-MotorDirection Direction[NUM_MOTORS];
-
-//Initialize position value variables
-int Position[NUM_MOTORS];
-// int ZeroPosition[NUM_MOTORS] = { 0, 200, 192, 191, 194, 200 };
-int ZeroPosition[NUM_MOTORS] = { 199, 186, 194, 194, 192, 199 };
-//int MaxPosition[NUM_MOTORS] = { 1024, 822, 821, 825, 826, 829 };
-int MaxPosition[NUM_MOTORS] = { 833, 827, 826, 829, 831, 833 };
-
-//Initialize desired position value variables												
-int DesiredPosition[NUM_MOTORS];
-
-//Initialize correct position check variables
-boolean CorrectPosition[NUM_MOTORS];
-
-//Initialize serial input variable
-int InputData[2];
-int InputArray[NUM_MOTORS];
-
-//Initialize time and time between serial port writing variables
-unsigned long CurrentTime;
-unsigned long PreviousTime;
-unsigned long SendInterval;
-
-//Initialize index variables
-int IndexSerialInput;
-int MotorCounter;
-
-/******* Set up L9958 chips *********
-' L9958 Config Register
-' Bit
-'0 - RES
-'1 - DR - reset
-'2 - CL_1 - curr limit
-'3 - CL_2 - curr_limit
-'4 - RES
-'5 - RES
-'6 - RES
-'7 - RES
-'8 - VSR - voltage slew rate (1 enables slew limit, 0 disables)
-'9 - ISR - current slew rate (1 enables slew limit, 0 disables)
-'10 - ISR_DIS - current slew disable
-'11 - OL_ON - open load enable
-'12 - RES
-'13 - RES
-'14 - 0 - always zero
-'15 - 0 - always zero
+/** Notes for porting:
+*   - For AnalogIn: read_u16 -> [0, 65536], read -> [0.0, 1.0]
+*   - PWM write argument must be [0.0, 1.0], alternatively specify PWM period
 */
-unsigned int configWord = 0b0000010000001100;
 
-void setup() {
-	// L9958 Slave Select Pins
-	pinMode(SlaveSelectPinMotor1, OUTPUT); digitalWrite(SlaveSelectPinMotor1, LOW); // HIGH = not selected
-	pinMode(SlaveSelectPinMotor2, OUTPUT); digitalWrite(SlaveSelectPinMotor2, LOW);
-	pinMode(SlaveSelectPinMotor3, OUTPUT); digitalWrite(SlaveSelectPinMotor3, LOW);
-	pinMode(SlaveSelectPinMotor4, OUTPUT); digitalWrite(SlaveSelectPinMotor4, LOW);
-	pinMode(SlaveSelectPinMotor5, OUTPUT); digitalWrite(SlaveSelectPinMotor5, LOW);
-	pinMode(SlaveSelectPinMotor6, OUTPUT); digitalWrite(SlaveSelectPinMotor6, LOW);
+// Setup variables related to actuator position
+int positions[NUM_MOTORS];
+MotorDirection directions[NUM_MOTORS];
+int pwms[NUM_MOTORS];
 
-	// L9958 Direction Pins
-	pinMode(DirectionPinMotor1, OUTPUT);
-	pinMode(DirectionPinMotor2, OUTPUT);
-	pinMode(DirectionPinMotor3, OUTPUT);
-	pinMode(DirectionPinMotor4, OUTPUT);
-	pinMode(DirectionPinMotor5, OUTPUT);
-	pinMode(DirectionPinMotor6, OUTPUT);
+// Variables related to serial input parsing
+int input[NUM_MOTORS];
+int desiredPositions[NUM_MOTORS];
+bool validData = true;
 
-	// L9958 PWM Pins
-	pinMode(PWMPinMotor1, OUTPUT); digitalWrite(PWMPinMotor1, LOW);
-	pinMode(PWMPinMotor2, OUTPUT); digitalWrite(PWMPinMotor2, LOW);
-	pinMode(PWMPinMotor3, OUTPUT); digitalWrite(PWMPinMotor3, LOW);
-	pinMode(PWMPinMotor4, OUTPUT); digitalWrite(PWMPinMotor4, LOW);
-	pinMode(PWMPinMotor5, OUTPUT); digitalWrite(PWMPinMotor5, LOW);
-	pinMode(PWMPinMotor6, OUTPUT); digitalWrite(PWMPinMotor6, LOW);
+// Setup variables related to serial out printing
+int currentTime;
+int previousTime;
+const int SEND_INTERVAL = 1000;
+const int RESET_DELAY = 4000;
 
-	// L9958 Enable for all motors
-	pinMode(ENABLE_MOTORS1, OUTPUT); digitalWrite(ENABLE_MOTORS1, HIGH); // HIGH = disabled
-	pinMode(ENABLE_MOTORS2, OUTPUT); digitalWrite(ENABLE_MOTORS2, HIGH); // HIGH = disabled
-
-	// SPI stuff
-	// See: https://www.arduino.cc/en/Reference/SPI
-	SPI.begin();
-	SPI.setBitOrder(LSBFIRST);
-	SPI.setDataMode(SPI_MODE1); // clock polarity = low, phase = high
-
-	// Motor 1
-	digitalWrite(SlaveSelectPinMotor1, LOW);
-	SPI.transfer(lowByte(configWord));
-	SPI.transfer(highByte(configWord));
-	digitalWrite(SlaveSelectPinMotor1, HIGH);
-
-	// Motor 2
-	digitalWrite(SlaveSelectPinMotor2, LOW);
-	SPI.transfer(lowByte(configWord));
-	SPI.transfer(highByte(configWord));
-	digitalWrite(SlaveSelectPinMotor2, HIGH);
-
-	// Motor 3
-	digitalWrite(SlaveSelectPinMotor3, LOW);
-	SPI.transfer(lowByte(configWord));
-	SPI.transfer(highByte(configWord));
-	digitalWrite(SlaveSelectPinMotor3, HIGH);
-
-	// Motor 4
-	digitalWrite(SlaveSelectPinMotor4, LOW);
-	SPI.transfer(lowByte(configWord));
-	SPI.transfer(highByte(configWord));
-	digitalWrite(SlaveSelectPinMotor4, HIGH);
-
-	// Motor 5
-	digitalWrite(SlaveSelectPinMotor5, LOW);
-	SPI.transfer(lowByte(configWord));
-	SPI.transfer(highByte(configWord));
-	digitalWrite(SlaveSelectPinMotor5, HIGH);
-
-	// Motor 6
-	digitalWrite(SlaveSelectPinMotor6, LOW);
-	SPI.transfer(lowByte(configWord));
-	SPI.transfer(highByte(configWord));
-	digitalWrite(SlaveSelectPinMotor6, HIGH);
-
-	digitalWrite(ENABLE_MOTORS1, LOW);// LOW = enabled
-	digitalWrite(ENABLE_MOTORS2, LOW);// LOW = enabled
-									  //Set initial actuator settings to pull at 0 speed for safety
-	ResetToZero();
-	delay(4000);
-	for (MotorCounter = 0; MotorCounter < NUM_MOTORS; MotorCounter++) {
-		DesiredPosition[MotorCounter] = 0;
-		PWM[MotorCounter] = 0;
-	}
-
-	//Set initial previous send times to 0
-	PreviousTime = 0;
-
-	//Set Read/Send interval (milliseconds)
-	SendInterval = 1000;
-
-	//calculate actuator lengths (?)
-
-	Serial.begin(115200);
-	Serial.println("Begin");
-	
-	// ExtendAll();
+// Move all actuators in given direction
+void MoveAll(MotorDirection dir)
+{
+    for (int i = 0; i < NUM_MOTORS; ++i) 
+    {
+        digitalWrite(DIR_PINS[i], dir);
+        analogWrite(PWM_PINS[i], 100);
+    }
 }
 
-void loop() {
-	NormalOp();
-	// Calibrate();
-	/*
-	int motor = 2;
-	Serial.println("Extending for 2s");
-	MoveOne(motor, EXTEND);
-	MoveOne(3, EXTEND);
-	delay(2000);
-
-	Serial.println("Stopping for 4s");
-	analogWrite(PWMPinMotor2, 0);
-	analogWrite(PWMPinMotor3, 0);
-	delay(4000);
-
-	Serial.println("Retracting for 2s");
-	MoveOne(motor, RETRACT);
-	MoveOne(3, RETRACT);
-	delay(2000);*/
+// Reads and parses serial input to actual actuator positions.
+void ReadSerial()
+{
+    validData = true;
+    
+    // Read data according to scanf format
+    while (SerialUSB.available() > 0)
+    {
+        for (int i = 0; i < NUM_MOTORS; ++i)
+        {
+            input[i] = SerialUSB.parseInt();
+        }
+    }
+    // Validate data values
+    for (int i = 0; i < NUM_MOTORS; ++i)
+    {
+        if (input[i] > MAX_LENGTH || input[i] < MIN_LENGTH)
+        {
+            //SerialUSB.print("Invalid data value: %d \n", input[i]);
+            validData = false;
+            return;
+        }
+    }
+    
+    // Copy values to desiredPositions array if valid
+    if (validData)
+    {
+        for (int i = 0; i < NUM_MOTORS; ++i)
+        {
+            desiredPositions[i] = input[i];
+        }
+        // SerialUSB.print("Desired positions updated! \n");
+        return;
+    }
 }
 
-// Triggered when data comes into RX
-// example data: 0 20 40 60 80 100
-// ends with '\n'
-// TODO: add start char for more reliable parsing? This may come at the response of responsiveness
-void MySerialEvent() {
-	//Test Manual Control Mode
-	for (MotorCounter = 0; MotorCounter < NUM_MOTORS; MotorCounter++) {
-		CorrectPosition[MotorCounter] = false; // originally 0
-	}
-
-	IndexSerialInput = 0;
-	while (Serial.available() > 0) {
-		// Parse NUM_MOTORS ints
-		for (int i = 0; i < NUM_MOTORS; i++)
-		{
-			InputArray[i] = Serial.parseInt();
-
-			// Validate input
-			if (InputArray[i] > MAX_LENGTH || InputArray[i] < MIN_LENGTH) 
-			{
-				Serial.println("Invalid data due to Position set outside of range [0,1023]");
-				Serial.print("Value of invalid data was: ");
-				Serial.println(InputArray[i]);
-				Serial.flush(); // "waits until transmission of outgoing data complete"
-				return;
-			}
-		}
-
-		// Break once newline detected
-		if (Serial.read() == '\n')
-		{
-			break;
-		}
-	}
-
-	// LEAP controller Mode
-	// if (Serial.available() >= MotorNumber)
-	// {
-	// Serial.readBytes(InputArray, MotorNumber);
-	//
-	// for (int i = 0; i<=5; i++)
-	// {
-	// InputArray[i] = 4*InputArray[i];
-	// }
-
-	for (int i = 0; i < NUM_MOTORS; i++)
+void setup()
+{
+    // Initiailize pins
+	for (int i = 0; i < NUM_MOTORS; ++i)
 	{
-		DesiredPosition[i] = InputArray[i];
+		pinMode(DIR_PINS[i], OUTPUT);
+		digitalWrite(DIR_PINS[i], LOW);
+
+		pinMode(PWM_PINS[i], OUTPUT);
+		analogWrite(PWM_PINS[i], 0);
+
+		pinMode(POT_PINS[i], INPUT);
+
+		pinMode(ENABLE_MOTORS1, OUTPUT);
+		pinMode(ENABLE_MOTORS2, OUTPUT);
+
 	}
-	Serial.println("DesiredPositions updated!");
+    // Enable all motors and reset to min length
+    digitalWrite(ENABLE_MOTORS1, LOW);
+    digitalWrite(ENABLE_MOTORS2, LOW);
+    MoveAll(RETRACT);
+    delay(RESET_DELAY);
+    
+    // Init serial with baudrate
+    SerialUSB.begin(BAUDRATE);
+
+    // Initialize desiredPositions and pwms arrays
+    for (int i = 0; i < NUM_MOTORS; ++i) 
+    {
+        desiredPositions[i] = 0;
+        pwms[i] = 0;
+    }
+    
+    previousTime = 0;
+    while (!SerialUSB);
+    SerialUSB.print("Begin\n");
 }
 
+// Takes NUM_READINGS readings of a potentiometer pin, and
+// returns the average.
+int normalizeAnalogRead(int motor)
+{
+    const int NUM_READINGS = 10;
+    int sum = 0;
+    for (int r = 0; r < NUM_READINGS; ++r)
+    {
+        sum += analogRead(POT_PINS[motor]);
+    }
+    return sum / NUM_READINGS; // integer division is on purpose
+}
+
+
+// Reads actuator values from serial and moves them into those positions.
 void NormalOp()
 {
-	// Read potentiometer positions
-	Position[0] = analogRead(PotentiometerPinMotor1);
-	Position[1] = analogRead(PotentiometerPinMotor2);
-	Position[2] = analogRead(PotentiometerPinMotor3);
-	Position[3] = analogRead(PotentiometerPinMotor4);
-	Position[4] = analogRead(PotentiometerPinMotor5);
-	Position[5] = analogRead(PotentiometerPinMotor6);
-
-	for (MotorCounter = 0; MotorCounter < NUM_MOTORS; MotorCounter++) {
-		// Set actuator position to [0, 1023]
-		Position[MotorCounter] = map(Position[MotorCounter], ZeroPosition[MotorCounter], MaxPosition[MotorCounter], MIN_LENGTH, MAX_LENGTH);
+    for (int i = 0; i < NUM_MOTORS; ++i)
+    {
+        // Map pot reading between MIN_LENGTH and MAX_LENGTH
+        //NOTE: read_u16() OUTPUTS BETWEEN 0 AND 65536
+        // positions[i] = (POT_PINS[i].read_u16() - ZERO_POSITION[i]) * (MAX_LENGTH - MIN_LENGTH) / (MAX_POSITION[i] - ZERO_POSITION[i]) + MIN_LENGTH; 
+		positions[i] = map(analogRead(POT_PINS[i]), ZERO_POSITION[i], MAX_POSITION[i], MIN_LENGTH, MAX_LENGTH);
 	}
+    
+    // Parse serial input
+    // if (SerialUSB.available() > 0) ReadSerial();
+        
+    currentTime = millis();
+    if (currentTime - previousTime > SEND_INTERVAL)
+    {
+        // Time to send stuff
+        SerialUSB.print("Desired Positions:\n");
+        for (int i = 0; i< NUM_MOTORS; ++i)
+        {
+            SerialUSB.print(desiredPositions[i]); SerialUSB.print(" ");
+        }
+        SerialUSB.print("\n");
+        
+        SerialUSB.print("Current Positions:\n");
+        for (int i = 0; i< NUM_MOTORS; ++i)
+        {
+            SerialUSB.print(positions[i]); SerialUSB.print(" ");
+        }
+        SerialUSB.print("\n");
+        
+        SerialUSB.print("PWM Values:\n");
+        for (int i = 0; i< NUM_MOTORS; ++i)
+        {
+            SerialUSB.print(pwms[i]); SerialUSB.print(" ");
+        }
+        SerialUSB.print("\n");
+        
+    }
 
-	// Trigger our serial function if enough chars are available
-	if (Serial.available() > 0) {
-		MySerialEvent();
-	}
-	CurrentTime = millis();
-
-	if (CurrentTime - PreviousTime > SendInterval) {
-		// Time to send a command
-
-		// Print desired positions
-		Serial.println("DesiredPositions");
-		for (MotorCounter = 0; MotorCounter < NUM_MOTORS; MotorCounter++) {
-			Serial.print(DesiredPosition[MotorCounter]); Serial.print(" ");
-		}
-		Serial.println("");
-
-		// Print current positions
-		Serial.println("Current Positions");
-		for (MotorCounter = 0; MotorCounter < NUM_MOTORS; MotorCounter++) {
-			Serial.print(Position[MotorCounter]); Serial.print(" ");
-		}
-
-		// Print PWM
-		Serial.println("\nPWM Values");
-		for (MotorCounter = 0; MotorCounter < NUM_MOTORS; MotorCounter++) {
-			Serial.print(PWM[MotorCounter]); Serial.print(" ");
-		}
-		Serial.println("");
-		PreviousTime = CurrentTime;
-	}
-
-	for (MotorCounter = 0; MotorCounter < NUM_MOTORS; MotorCounter++) {
-		// Check motor positions
-		if (abs(Position[MotorCounter] - DesiredPosition[MotorCounter]) <= TOL) {
-			CorrectPosition[MotorCounter] = true;
-			PWM[MotorCounter] = 0;
-		}
-		else
-		{
-			CorrectPosition[MotorCounter] = false;
-		}
-
-		// If an actuator not in a correct position
-		if (!CorrectPosition[MotorCounter]) {
-
-			// If extended further than desired
-			if (Position[MotorCounter] > DesiredPosition[MotorCounter]) {
-				Direction[MotorCounter] = RETRACT;
-				PWM[MotorCounter] = abs(Position[MotorCounter] - DesiredPosition[MotorCounter]);
-				PWM[MotorCounter] = 100; // Override with 100??
-			}
-
-			// Retracted further than desired
-			else if (Position[MotorCounter] < DesiredPosition[MotorCounter]) {
-				Direction[MotorCounter] = EXTEND;
-				PWM[MotorCounter] = abs(Position[MotorCounter] - DesiredPosition[MotorCounter]);
-				PWM[MotorCounter] = 100;
-			}
-		}
-
-	}
-	/*
-	MaxMotorPWM = 0;
-	for (MotorCounter = 0; MotorCounter <= MotorNumber - 1; MotorCounter++) {
-	MaxMotorPWM = max(MaxMotorPWM, PWM[MotorCounter]);
-	}
-	for (MotorCounter = 0; MotorCounter <= MotorNumber - 1; MotorCounter++) {
-	PWM[MotorCounter] = 100 * PWM[MotorCounter] / MaxMotorPWM;
-	}
-	*/
-
-	digitalWrite(DirectionPinMotor1, Direction[0]); analogWrite(PWMPinMotor1, PWM[0]);
-	digitalWrite(DirectionPinMotor2, Direction[1]); analogWrite(PWMPinMotor2, PWM[1]);
-	digitalWrite(DirectionPinMotor3, Direction[2]); analogWrite(PWMPinMotor3, PWM[2]);
-	digitalWrite(DirectionPinMotor4, Direction[3]); analogWrite(PWMPinMotor4, PWM[3]);
-	digitalWrite(DirectionPinMotor5, Direction[4]); analogWrite(PWMPinMotor5, PWM[4]);
-	digitalWrite(DirectionPinMotor6, Direction[5]); analogWrite(PWMPinMotor6, PWM[5]);
+    for (int i = 0; i < NUM_MOTORS; ++i)
+    {
+        // Check actuator position compared to desired positions
+        if (abs(positions[i] - desiredPositions[i]) <= TOL)
+        {
+            // Stop moving if within tol
+            pwms[i] = 0;
+        }
+        else
+        {
+            // Determine direction to move actuator
+            directions[i] = (positions[i] > desiredPositions[i]) ? RETRACT : EXTEND;
+            
+            // Set PWM
+            // pwms[i] = abs(positions[i] - desiredPositions[i]) / MAX_LENGTH;
+            pwms[i] = (abs(positions[i] - desiredPositions[i]) > TOL2) ? 100 : 50;
+        }
+        
+        // Write values
+        digitalWrite(DIR_PINS[i], directions[i]);
+        analogWrite(PWM_PINS[i], pwms[i]);
+    }
 }
 
-void ResetToZero()
-{
-	digitalWrite(DirectionPinMotor1, RETRACT); analogWrite(PWMPinMotor1, 1023);
-	digitalWrite(DirectionPinMotor2, RETRACT); analogWrite(PWMPinMotor2, 1023);
-	digitalWrite(DirectionPinMotor3, RETRACT); analogWrite(PWMPinMotor3, 1023);
-	digitalWrite(DirectionPinMotor4, RETRACT); analogWrite(PWMPinMotor4, 1023);
-	digitalWrite(DirectionPinMotor5, RETRACT); analogWrite(PWMPinMotor5, 1023);
-	digitalWrite(DirectionPinMotor6, RETRACT); analogWrite(PWMPinMotor6, 1023);
-}
-
-// Extends all motors.
-void ExtendAll()
-{
-	digitalWrite(DirectionPinMotor1, EXTEND); analogWrite(PWMPinMotor1, 1023);
-	digitalWrite(DirectionPinMotor2, EXTEND); analogWrite(PWMPinMotor2, 1023);
-	digitalWrite(DirectionPinMotor3, EXTEND); analogWrite(PWMPinMotor3, 1023);
-	digitalWrite(DirectionPinMotor4, EXTEND); analogWrite(PWMPinMotor4, 1023);
-	digitalWrite(DirectionPinMotor5, EXTEND); analogWrite(PWMPinMotor5, 1023);
-	digitalWrite(DirectionPinMotor6, EXTEND); analogWrite(PWMPinMotor6, 1023);
-}
-
-// Moves one motor with given direction.
-// Prints out raw analogread position per call.
-void MoveOne(int motor, MotorDirection dir)
-{
-	int dirpin = 1, pwmpin = 1, potpin = 1;
-	switch (motor)
-	{
-	case 1:
-		dirpin = DirectionPinMotor1;
-		pwmpin = PWMPinMotor1;
-		potpin = PotentiometerPinMotor1;
-		break;
-	case 2:
-		dirpin = DirectionPinMotor2;
-		pwmpin = PWMPinMotor2;
-		potpin = PotentiometerPinMotor2;
-		break;
-	case 3:
-		dirpin = DirectionPinMotor3;
-		pwmpin = PWMPinMotor3;
-		potpin = PotentiometerPinMotor3;
-		break;
-	case 4:
-		dirpin = DirectionPinMotor4;
-		pwmpin = PWMPinMotor4;
-		potpin = PotentiometerPinMotor4;
-		break;
-	case 5:
-		dirpin = DirectionPinMotor5;
-		pwmpin = PWMPinMotor5;
-		potpin = PotentiometerPinMotor5;
-		break;
-	case 6:
-		dirpin = DirectionPinMotor6;
-		pwmpin = PWMPinMotor6;
-		potpin = PotentiometerPinMotor6;
-		break;
-	}
-	digitalWrite(dirpin, dir); analogWrite(pwmpin, 1023);
-	Serial.println(analogRead(potpin));
-}
-
+// Looped function used to calibrate
+// - Extends motors to max length, takes multiple readings and averages
+// - Retracts motors to min length, takes multiple readings and averages
+// - Prints calibrated values to serial
 void Calibrate()
 {
-	// Read potentiometer positions
-	Position[0] = analogRead(PotentiometerPinMotor1);
-	Position[1] = analogRead(PotentiometerPinMotor2);
-	Position[2] = analogRead(PotentiometerPinMotor3);
-	Position[3] = analogRead(PotentiometerPinMotor4);
-	Position[4] = analogRead(PotentiometerPinMotor5);
-	Position[5] = analogRead(PotentiometerPinMotor6);
-
-	for (MotorCounter = 0; MotorCounter < NUM_MOTORS; MotorCounter++) {
-		Serial.print(Position[MotorCounter]); Serial.print(" ");
-	}
-	Serial.println("");
+    int maxReadings[NUM_MOTORS];
+    int minReadings[NUM_MOTORS];
+    
+    for (int i = 0; i < NUM_MOTORS; ++i)
+    {
+        // Extend motor
+        digitalWrite(DIR_PINS[i], EXTEND);
+        analogWrite(PWM_PINS[i], 100);
+        delay(RESET_DELAY);
+        
+        // Read value at max extension
+        analogWrite(PWM_PINS[i], 0);
+        maxReadings[i] = normalizeAnalogRead(i);
+        
+        // Retract motor
+        digitalWrite(DIR_PINS[i], RETRACT);
+        analogWrite(PWM_PINS[i], 100);
+        delay(RESET_DELAY);
+        
+        // Read value at min extension
+        analogWrite(PWM_PINS[i], 0);
+        minReadings[i] = normalizeAnalogRead(i);
+        
+        SerialUSB.print("Motor: min ");
+        SerialUSB.print(minReadings[i]);
+        SerialUSB.print(" max ");
+        SerialUSB.print(maxReadings[i]);
+        SerialUSB.println("");
+    }
 }
+
+// Main function; runs setup once and tasks in infinite loop
+void loop()
+{
+	NormalOp();
+}
+
+
