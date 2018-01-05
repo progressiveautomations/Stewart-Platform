@@ -26,7 +26,6 @@ char match_buf[MAX_BUFFER_SIZE];  // buffer to temporarily store matched values
 
 // Translator thread variables
 int32_t reading_sum;  // sum of multiple readings to be normalized for a final value
-uint16_t sum_difference;
 uint16_t input_value;  // matched value obtained from the parser
 uint16_t input_array[NUM_MOTORS];  // final array of position values from the input
 int16_t pos_diff;  // difference between current and desired position
@@ -54,7 +53,7 @@ uint8_t reading;
 void setup()
 {
     SerialUSB.begin(BAUD_RATE);
-    while (!SerialUSB); //wait until SerialUSB ready
+    // while (!SerialUSB); //wait until SerialUSB ready
 
     previous_time = 0; 
 
@@ -216,12 +215,52 @@ void translateInput()
         }
     }
 
-    // sum_difference = 0;
-    // for (motor = 0; motor < NUM_MOTORS; ++ motor)
-    // {
-    //     pos_diff = pos[motor] - desired_pos[motor];
-    //     sum_difference += abs(pos_diff);
-    // }
+
+    // Get position differences to determine actuator movement direction/strength
+    int16_t desired_pos[NUM_MOTORS];
+    for (motor = 0; motor < NUM_MOTORS; ++motor)
+    {
+        pos_diff[motor] = pos[motor] - desired_pos[motor];
+    }
+
+    // TODO: try to get motor movement ranked by difference
+    int max_diff = 0;
+    int max_motor = -1;
+    // int min_motor = -1;
+    // int min_diff = 1024;
+    int adjacents[2];
+    for (motor = 0; motor < NUM_MOTORS; ++motor)
+    {
+        if (pos_diff[motor] > max_diff)
+        {
+            max_diff = pos_diff[motor];
+            max_motor = motor;
+        }
+        // else if (pos_diff[motor] < min_diff)
+        // {
+        //     min_diff = pos_diff[motor];
+        //     min_motor = motor;
+        }
+    }
+    if (motor == 5)
+    {
+        adjacents[0] = 4;
+        adjacents [1] = 0;
+    }
+    else if (motor == 0)
+    {
+        adjacents[0] = 5;
+        adjacents [1] = 1;
+    }
+    else
+    {
+        adjacents[0] = max_motor;
+        adjacents [1] = 0;
+    }
+    if (pos_diff[adjacents[0]] > pos_diff[adjacents[1]])
+    {
+        // TODO: Set motor direction for the below loop
+    }
 
     // Check actuator positions and set movement parameters (PWM, direction) as needed
     for (motor = 0; motor < NUM_MOTORS; ++motor)
@@ -252,7 +291,7 @@ void translateInput()
             }
             else
             {
-                // dir[motor] = EXTEND;
+                dir[motor] = EXTEND;
             }
         }
 

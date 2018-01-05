@@ -7,11 +7,11 @@ import serial
 import time
 
 # Leap Motion constants
-FRAME_RATE = 10  # number of frames to skip before sending/printing data
+FRAME_RATE = 5  # number of frames to skip before sending/printing data
 
 # Serial constants
 USE_SERIAL = True  # set False for debugging if no Arduino present
-SERIAL_PORT = 'COM5'
+SERIAL_PORT = 'COM4'
 BAUD_RATE = 9600
 
 # Platform position matrices and constants

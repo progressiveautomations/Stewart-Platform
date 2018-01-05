@@ -16,8 +16,8 @@
 #define MIN_POS 0  // maximum and minimum position values for all actuators defined by analogRead()
 #define MAX_POS 1023
 #define MAX_PWM 255
-int ZERO_POS[NUM_MOTORS] = { 185, 178, 176, 179, 184, 186 };  // measured position bounds by actuator
-int END_POS[NUM_MOTORS] = { 837, 835, 832, 835, 835, 840 };
+int ZERO_POS[NUM_MOTORS] = { 187, 182, 179, 187, 188, 191 };  // measured position bounds by actuator
+int END_POS[NUM_MOTORS] = { 840, 836, 835, 832, 841, 838 };
 
 // Pin group arrays; each value corresponding to the actuator (see HWDefs for values)
 const uint8_t DIR_PINS[NUM_MOTORS] = { DIR_PIN_1, DIR_PIN_2, DIR_PIN_3, DIR_PIN_4, DIR_PIN_5, DIR_PIN_6 };
@@ -28,8 +28,8 @@ const uint8_t POT_PINS[NUM_MOTORS] = { POT_PIN_1, POT_PIN_2, POT_PIN_3, POT_PIN_
 #define RESET_DELAY 4000  // at full PWM, the actuator should fully extend/retract in 4s (6" stroke, 2.00"/s)
 #define POSITION_FAR_THRESHOLD 20  // uncertainty for which offset from desired position is acceptable
 #define POSITION_NEAR_THRESHOLD 5
-#define PWM_NEAR 20  // value for PWM when position is in tolerance (but not in position)
-#define PWM_FAR 150  // default PWM value; scaling is disabled in early development
+#define PWM_NEAR 50  // value for PWM when position is in tolerance (but not in position)
+#define PWM_FAR 255  // default PWM value; scaling is disabled in early development
 typedef enum _MotorDirection  // to clarify the direction in which actuators move
 {
     RETRACT = 0,
