@@ -1,12 +1,12 @@
 #include "project.h"
 
 // PWM and direction value variables
-uint16_t pwm[NUM_MOTORS];  // maximum of 255, but 16-bit for input consistency
+int16_t pwm[NUM_MOTORS];  // maximum of 255, but 16-bit for input consistency
 MotorDirection dir[NUM_MOTORS];
 
 // Position variables (extreme values from manual calibration)
 int16_t pos[NUM_MOTORS];
-uint16_t desired_pos[NUM_MOTORS];
+int16_t desired_pos[NUM_MOTORS];
 boolean at_correct_pos[NUM_MOTORS];
 
 // Thread objects
