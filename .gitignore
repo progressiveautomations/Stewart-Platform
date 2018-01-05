@@ -244,3 +244,4 @@ ModelManifest.xml
 # FAKE - F# Make
 .fake/
 project/project_AVR_MEGA2560_atmega2560.hex
+.DS_Store

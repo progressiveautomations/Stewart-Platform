@@ -53,7 +53,8 @@ uint8_t reading;
 */
 void setup()
 {
-    Serial.begin(BAUD_RATE);
+    SerialUSB.begin(BAUD_RATE);
+    while (!SerialUSB); //wait until SerialUSB ready
 
     previous_time = 0; 
 
@@ -118,9 +119,9 @@ void getInput()
     if (!buffer_locked)
     {
         // Add characters from the input buffer (stored as a FIFO queue)
-        while (Serial.available() > 0)
+        while (SerialUSB.available() > 0)
         {
-            char_queue.add(Serial.read());
+            char_queue.add(SerialUSB.read());
         }
 
         // Trim the queue to a certain size (remove oldest entries first)
@@ -174,7 +175,7 @@ void parseInput()
                 else
                 {
                     input_valid = false;
-                    Serial.println("Invalid input value detected!");
+                    SerialUSB.println("Invalid input value detected!");
                     break;
                 }
                 input_ready = input_valid;
@@ -183,9 +184,9 @@ void parseInput()
         // else
         // {
         //     // Print the failed result for debug
-        //     Serial.print("Unable to properly parse input: ");
-        //     Serial.print(target_buf);
-        //     Serial.println("");
+        //     SerialUSB.print("Unable to properly parse input: ");
+        //     SerialUSB.print(target_buf);
+        //     SerialUSB.println("");
         // }
 
         target_string = "";  // reset for the next iteration
@@ -270,10 +271,10 @@ void printMotorInfo(int16_t pins[])
 {
     for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
-        Serial.print(pins[motor]);
-        Serial.print(" ");
+        SerialUSB.print(pins[motor]);
+        SerialUSB.print(" ");
     }
-    Serial.println("");
+    SerialUSB.println("");
 }
 
 /*
@@ -284,13 +285,13 @@ void printPlatformInfo()
     current_time = millis();
     if (current_time - previous_time > PRINT_INTERVAL)
     {
-        Serial.println("Desired Positions: ");
+        SerialUSB.println("Desired Positions: ");
         printMotorInfo(desired_pos);
 
-        Serial.println("Current Positions: ");
+        SerialUSB.println("Current Positions: ");
         printMotorInfo(pos);
 
-        Serial.println("PWM Values");
+        SerialUSB.println("PWM Values");
         printMotorInfo(pwm);
 
         previous_time = current_time;
@@ -339,7 +340,7 @@ void moveOne(uint8_t motor, MotorDirection dir)
 {
     digitalWrite(DIR_PINS[motor], dir);
     analogWrite(PWM_PINS[motor], MAX_PWM);
-    Serial.println(analogRead(POT_PINS[motor]));
+    SerialUSB.println(analogRead(POT_PINS[motor]));
 }
 
 /*
@@ -372,9 +373,9 @@ void calibrateAll()
         min_readings[motor] = normalizeAnalogRead(motor);
 
         // Print results
-        Serial.print(min_readings[motor]);
-        Serial.print(" ");
-        Serial.print(max_readings[motor]);
-        Serial.print("\n");
+        SerialUSB.print(min_readings[motor]);
+        SerialUSB.print(" ");
+        SerialUSB.print(max_readings[motor]);
+        SerialUSB.print("\n");
     }
 }
