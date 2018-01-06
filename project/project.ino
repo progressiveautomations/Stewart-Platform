@@ -1,15 +1,16 @@
 // Main Arduino code for a 6-dof Stewart platform.
-// Main code hosted at: https://github.com/henrymliu/StewartPlatform
+// Written for the Arduino Due.
+// Code hosted at: https://github.com/henrymliu/StewartPlatform
 //
 #include "project.h"
 
 // PWM and direction value variables
-int16_t pwm[NUM_MOTORS];  // maximum of 255, but 16-bit for consistent typing
-MotorDirection dir[NUM_MOTORS];
+int16_t pwm[NUM_MOTORS];  // current PWM for each actuator (max of 255; kept as 16-bit for consistent typing)
+MotorDirection dir[NUM_MOTORS];  // current direcion for each actuator; i.e. EXTEND/RETRACT
 
 // Position variables (all signed despite specification difference in order for consistent typing)
-int16_t pos[NUM_MOTORS];
-int16_t desired_pos[NUM_MOTORS];
+int16_t pos[NUM_MOTORS];  // current position (measured by analog read) of each actuator 
+int16_t desired_pos[NUM_MOTORS];  // desired (user-inputted) position of each actuator
 int16_t pos_diff[NUM_MOTORS];  // difference between current and desired position
 uint16_t abs_pos_diff;  // absolute pos_diff for an actuator
 uint16_t max_pos_diff;  // maximum abs_pos_diff of all the actuators (i.e. held by leading_motor)
@@ -37,23 +38,23 @@ uint8_t leading_motor;  // actuator at the farthest distance from desired positi
 LinkedList<uint8_t> movement_order;  // order to move actuators, starting with the leading motor
 
 // Time variables (for printing)
-unsigned long current_time;
-unsigned long previous_time;
+unsigned long current_time;  // current time (in millis); used to measure difference from previous_time
+unsigned long previous_time;  // last recorded time (in millis); measured from execution start or last print
 
 // Flags to prevent collisions between threads
-boolean buffer_locked = false;
-boolean input_ready = false;
-boolean input_valid = true;
+boolean buffer_locked = false;  // flag for when a thread is modifying the character queue
+boolean input_ready = false;  // flag for when parsed input is ready to be picked up by the translator thread
+boolean input_valid = true;  // flag for when input values have been validated by the parser thread 
 
 // Calibration variables
-boolean do_calibration = false;
-int16_t max_readings[NUM_MOTORS];
-int16_t min_readings[NUM_MOTORS];
+boolean do_calibration = false;  // switch to true to skip the normal routine and run calibration
+int16_t max_readings[NUM_MOTORS];  // average reading for each actuator at full extension
+int16_t min_readings[NUM_MOTORS];  // average reading for each actuator at full retraction
 
 // Iterator variables
-uint8_t motor;
-uint8_t reading;
-uint8_t list_index;
+uint8_t motor;  // used to iterate through actuators by their numbering; i.e. 0-5
+uint8_t reading;  // used to iterate through analog reads
+uint8_t list_index;  // used to iterate through actuators when not sorted by number
 
 
 /*
@@ -100,18 +101,21 @@ void setup()
         pwm[motor] = 0;
     }
 
-    // Configure threads for serial input processing
-    input_thread.setInterval(INPUT_INTERVAL);
-    parser_thread.setInterval(PARSER_INTERVAL);
-    translator_thread.setInterval(TRANSLATOR_INTERVAL);
-
-    // Check if calibration routine is enabled; else run the threads for the normal routine
+    // Run the calibration routine if enabled; else run the threads for the normal routine
     if (do_calibration)
     {
+        // For calibration, it is assumed the platform is in a modified state; i.e. disassembled
+        // Therefore, the program should stop here and not proceed with the loop afterwards
         calibrate();
+        while (true);
     }
     else
     {
+        // Configure threads for serial input processing
+        input_thread.setInterval(INPUT_INTERVAL);
+        parser_thread.setInterval(PARSER_INTERVAL);
+        translator_thread.setInterval(TRANSLATOR_INTERVAL);
+
         input_thread.onRun(getInput);
         parser_thread.onRun(parseInput);
         translator_thread.onRun(translateInput);
@@ -318,7 +322,6 @@ void translateInput()
     for (list_index = 0; list_index < NUM_MOTORS; ++list_index)
     {
         motor = movement_order.get(list_index);
-
         digitalWrite(DIR_PINS[motor], dir[motor]);
         analogWrite(PWM_PINS[motor], pwm[motor]);
     }

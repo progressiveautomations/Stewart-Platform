@@ -1,4 +1,4 @@
-// Header file containing hardware configurations for both the Arduino and linear actuators.
+// Header file containing hardware configurations for the Arduino Due mapping to the linear actuators.
 //
 #pragma once
 

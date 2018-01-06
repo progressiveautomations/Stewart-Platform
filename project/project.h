@@ -54,9 +54,9 @@ typedef enum _MotorDirection  // to clarify the direction in which actuators mov
 const char START_CHAR = '<';
 const char SENTINEL_CHAR = '>';
 const char DELIMITER_CHAR = ',';
-const char TARGET_PATTERN[] = "<(%d?%d?%d?%d),"  // pattern to match proper input from the input buffer
+const char TARGET_PATTERN[] = "<(%d?%d?%d?%d),"  // Lua string pattern to match proper input from the input buffer
                                "(%d?%d?%d?%d),"  // matches the last fully received proper string
-                               "(%d?%d?%d?%d),"  // buffer overflow issues should be handled by the hardware/host
+                               "(%d?%d?%d?%d),"  // requires host configuration to send commands with CR+LF endings
                                "(%d?%d?%d?%d),"
                                "(%d?%d?%d?%d),"
                                "(%d?%d?%d?%d)>\n*\r*$";
