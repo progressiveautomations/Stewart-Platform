@@ -1,25 +1,29 @@
-/*
-    Header file containing software configurations, constants, and
-    clarifying definitions for the Arduino.
-*/
+// Header file containing software configurations, constants, and clarifying definitions for the Arduino.
+//
 #pragma once
 
+#include "HWDefs.h"
+
+// Local library imports (see the Github page for links/references)
 #include "LinkedList.h"
 #include "Regexp.h"
 #include "StaticThreadController.h"
 #include "Thread.h"
-
-#include "HWDefs.h"
 
 // Platform parameters and bounds
 #define NUM_MOTORS 6
 #define MIN_POS 0  // maximum and minimum position values for all actuators defined by analogRead()
 #define MAX_POS 1023
 #define MAX_PWM 255
-int ZERO_POS[NUM_MOTORS] = { 187, 182, 179, 187, 188, 191 };  // measured position bounds by actuator
-int END_POS[NUM_MOTORS] = { 840, 836, 835, 832, 841, 838 };
+const uint16_t ZERO_POS[NUM_MOTORS] = { 187, 182, 179, 187, 188, 191 };  // measured position bounds by actuator
+const uint16_t END_POS[NUM_MOTORS] = { 840, 836, 835, 832, 841, 838 };
+const uint16_t ADJACENT_MOTORS[NUM_MOTORS][2] = {
+    // Motors indices directly adjacent to each motor; e.g. motor 5 and 1 are next to motor 0, if indexed 0 to 5
+    // Pairs are ordered by direction of numbering around the platform; i.e. { reverse, forward }
+    { 5, 1 }, { 0, 2 }, { 1, 3 }, { 2, 4 }, { 3, 5 }, { 4, 0 }
+};
 
-// Pin group arrays; each value corresponding to the actuator (see HWDefs for values)
+// Pin group arrays; each value corresponding to the actuator (see HWDefs.h for specific pins)
 const uint8_t DIR_PINS[NUM_MOTORS] = { DIR_PIN_1, DIR_PIN_2, DIR_PIN_3, DIR_PIN_4, DIR_PIN_5, DIR_PIN_6 };
 const uint8_t PWM_PINS[NUM_MOTORS] = { PWM_PIN_1, PWM_PIN_2, PWM_PIN_3, PWM_PIN_4, PWM_PIN_5, PWM_PIN_6 };
 const uint8_t POT_PINS[NUM_MOTORS] = { POT_PIN_1, POT_PIN_2, POT_PIN_3, POT_PIN_4, POT_PIN_5, POT_PIN_6 };
@@ -52,7 +56,7 @@ const char SENTINEL_CHAR = '>';
 const char DELIMITER_CHAR = ',';
 const char TARGET_PATTERN[] = "<(%d?%d?%d?%d),"  // pattern to match proper input from the input buffer
                                "(%d?%d?%d?%d),"  // matches the last fully received proper string
-                               "(%d?%d?%d?%d),"  // buffer overflow issues should be handled by the hardware/interface
+                               "(%d?%d?%d?%d),"  // buffer overflow issues should be handled by the hardware/host
                                "(%d?%d?%d?%d),"
                                "(%d?%d?%d?%d),"
                                "(%d?%d?%d?%d)>\n*\r*$";

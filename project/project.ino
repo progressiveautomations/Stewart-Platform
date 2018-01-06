@@ -1,13 +1,18 @@
+// Main Arduino code for a 6-dof Stewart platform.
+// Main code hosted at: https://github.com/henrymliu/StewartPlatform
+//
 #include "project.h"
 
 // PWM and direction value variables
-int16_t pwm[NUM_MOTORS];  // maximum of 255, but 16-bit for input consistency
+int16_t pwm[NUM_MOTORS];  // maximum of 255, but 16-bit for consistent typing
 MotorDirection dir[NUM_MOTORS];
 
-// Position variables (extreme values from manual calibration)
+// Position variables (all signed despite specification difference in order for consistent typing)
 int16_t pos[NUM_MOTORS];
 int16_t desired_pos[NUM_MOTORS];
-boolean at_correct_pos[NUM_MOTORS];
+int16_t pos_diff[NUM_MOTORS];  // difference between current and desired position
+uint16_t abs_pos_diff;  // absolute pos_diff for an actuator
+uint16_t max_pos_diff;  // maximum abs_pos_diff of all the actuators (i.e. held by leading_motor)
 
 // Thread objects
 Thread input_thread = Thread();  // to get data from the RX buffer
@@ -28,7 +33,8 @@ char match_buf[MAX_BUFFER_SIZE];  // buffer to temporarily store matched values
 int32_t reading_sum;  // sum of multiple readings to be normalized for a final value
 uint16_t input_value;  // matched value obtained from the parser
 uint16_t input_array[NUM_MOTORS];  // final array of position values from the input
-int16_t pos_diff;  // difference between current and desired position
+uint8_t leading_motor;  // actuator at the farthest distance from desired position
+LinkedList<uint8_t> movement_order;  // order to move actuators, starting with the leading motor
 
 // Time variables (for printing)
 unsigned long current_time;
@@ -39,29 +45,34 @@ boolean buffer_locked = false;
 boolean input_ready = false;
 boolean input_valid = true;
 
+// Calibration variables
+boolean do_calibration = false;
+int16_t max_readings[NUM_MOTORS];
+int16_t min_readings[NUM_MOTORS];
+
 // Iterator variables
 uint8_t motor;
 uint8_t reading;
+uint8_t list_index;
 
 
 /*
-    Initialize pins and actuators, and set configuration values.
-
-    @NOTE: LOW = selected/enabled
-           HIGH = deselected/disabled
-*/
+ * Initialize pins and actuators, and set configuration values.
+ *
+ * @NOTE: LOW = selected/enabled
+ *        HIGH = deselected/disabled
+ */
 void setup()
 {
     SerialUSB.begin(BAUD_RATE);
-    // while (!SerialUSB); //wait until SerialUSB ready
+    // while (!SerialUSB);  // disable while not using serial printing
 
-    previous_time = 0; 
+    previous_time = 0;  // set intial time for printing platform info
 
-    // Initialize the pins for each actuator (slave select, direction, PWM)
+    // Initialize the pins for each actuator (direction, PWM)
     for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
         pinMode(DIR_PINS[motor], OUTPUT);
-        
         pinMode(PWM_PINS[motor], OUTPUT);
         digitalWrite(PWM_PINS[motor], LOW);
     }
@@ -77,7 +88,11 @@ void setup()
     digitalWrite(ENABLE_MOTORS_2, LOW);
 
     // For safety, set initial actuator settings and speed to 0  
-    moveAll(RETRACT);
+    for (motor = 0; motor < NUM_MOTORS; ++motor)
+    {
+        digitalWrite(DIR_PINS[motor], RETRACT);
+        analogWrite(PWM_PINS[motor], MAX_PWM);
+    }
     delay(RESET_DELAY);
     for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
@@ -90,29 +105,49 @@ void setup()
     parser_thread.setInterval(PARSER_INTERVAL);
     translator_thread.setInterval(TRANSLATOR_INTERVAL);
 
-    input_thread.onRun(getInput);
-    parser_thread.onRun(parseInput);
-    translator_thread.onRun(translateInput);
-
-    // calibrateAll();
+    // Check if calibration routine is enabled; else run the threads for the normal routine
+    if (do_calibration)
+    {
+        calibrate();
+    }
+    else
+    {
+        input_thread.onRun(getInput);
+        parser_thread.onRun(parseInput);
+        translator_thread.onRun(translateInput);
+    }
 }
 
 
 /*
-    Execute the loop routine, mainly contained within the threads.
-    Also prints platform info at a given interval.
-*/
+ * Execute the loop routine, mainly contained within the threads.
+ */
 void loop()
 {
-    controller.run();  // execute the threads
-    // printPlatformInfo();
+    // Execute the thread routines
+    controller.run();
+
+    // Print platform info at a given interval (disabled since the serial handle is taken by the host)
+    // current_time = millis();
+    // if (current_time - previous_time > PRINT_INTERVAL)
+    // {
+    //     SerialUSB.println("Desired Positions: ");
+    //     printMotorInfo(desired_pos);
+
+    //     SerialUSB.println("Current Positions: ");
+    //     printMotorInfo(pos);
+
+    //     SerialUSB.println("PWM Values");
+    //     printMotorInfo(pwm);
+
+    //     previous_time = current_time;
+    // }
 }
 
 
 /*
-    Thread function to read and store serial input.
-    Also manages the buffer queue size.
-*/
+ * Thread function to read and store serial input. Also manages the buffer queue size.
+ */
 void getInput()
 {
     if (!buffer_locked)
@@ -138,8 +173,8 @@ void getInput()
 
 
 /*
-    Thread function to parse from an input Queue and prep data for the translator thread.
-*/
+ * Thread function to parse from an input queue and prep data for the translator thread.
+ */
 void parseInput()
 {
     if (!buffer_locked && char_queue.size() >= INPUT_TRIGGER)
@@ -174,19 +209,11 @@ void parseInput()
                 else
                 {
                     input_valid = false;
-                    SerialUSB.println("Invalid input value detected!");
                     break;
                 }
                 input_ready = input_valid;
            }
         }
-        // else
-        // {
-        //     // Print the failed result for debug
-        //     SerialUSB.print("Unable to properly parse input: ");
-        //     SerialUSB.print(target_buf);
-        //     SerialUSB.println("");
-        // }
 
         target_string = "";  // reset for the next iteration
     }
@@ -194,8 +221,8 @@ void parseInput()
 
 
 /*
-    Thread function to translate processed input to actuator movement.
-*/
+ * Thread function to translate processed input to actuator movement.
+ */
 void translateInput()
 {
     // Read potentiometer positions and scale them to the Arduino bounds
@@ -215,67 +242,23 @@ void translateInput()
         }
     }
 
-
-    // Get position differences to determine actuator movement direction/strength
-    int16_t desired_pos[NUM_MOTORS];
+    // For each actuator, set movement parameters (direction, PWM) based on position relative to desired
+    // Also find the farthest actuator from its desired position (will be set as the first to move)
+    max_pos_diff = 0;
     for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
         pos_diff[motor] = pos[motor] - desired_pos[motor];
-    }
+        abs_pos_diff = abs(pos_diff[motor]);
 
-    // TODO: try to get motor movement ranked by difference
-    int max_diff = 0;
-    int max_motor = -1;
-    // int min_motor = -1;
-    // int min_diff = 1024;
-    int adjacents[2];
-    for (motor = 0; motor < NUM_MOTORS; ++motor)
-    {
-        if (pos_diff[motor] > max_diff)
-        {
-            max_diff = pos_diff[motor];
-            max_motor = motor;
-        }
-        // else if (pos_diff[motor] < min_diff)
-        // {
-        //     min_diff = pos_diff[motor];
-        //     min_motor = motor;
-        }
-    }
-    if (motor == 5)
-    {
-        adjacents[0] = 4;
-        adjacents [1] = 0;
-    }
-    else if (motor == 0)
-    {
-        adjacents[0] = 5;
-        adjacents [1] = 1;
-    }
-    else
-    {
-        adjacents[0] = max_motor;
-        adjacents [1] = 0;
-    }
-    if (pos_diff[adjacents[0]] > pos_diff[adjacents[1]])
-    {
-        // TODO: Set motor direction for the below loop
-    }
-
-    // Check actuator positions and set movement parameters (PWM, direction) as needed
-    for (motor = 0; motor < NUM_MOTORS; ++motor)
-    {
-        pos_diff = pos[motor] - desired_pos[motor];
-        at_correct_pos[motor] = (pos_diff == 0);
-
-        if (at_correct_pos[motor] || abs(pos_diff) <= POSITION_NEAR_THRESHOLD)
+        // Stop the actuator if it is at (or close enough to) its desired position
+        if (abs_pos_diff <= POSITION_NEAR_THRESHOLD)
         {
             pwm[motor] = 0;
         }
         else
         {
             // Set a slower PWM if the actuator is close to the desired position
-            if (abs(pos_diff) <= POSITION_FAR_THRESHOLD)
+            if (abs_pos_diff <= POSITION_FAR_THRESHOLD)
             {
                 pwm[motor] = PWM_NEAR;
             }
@@ -285,7 +268,7 @@ void translateInput()
             }
 
             // Set the direction based on over/under-extension
-            if (pos_diff > 0)
+            if (pos_diff[motor] > 0)
             {
                 dir[motor] = RETRACT;
             }
@@ -295,6 +278,47 @@ void translateInput()
             }
         }
 
+        if (abs_pos_diff > max_pos_diff)
+        {
+            max_pos_diff = abs_pos_diff;
+            leading_motor = motor;
+        }
+    }
+
+    // Get the actuator movement order (around the platform) based on the largest position differences
+    // This is to avoid awkward/jerky movement when lower difference actuators are moved first
+    // Direction doesn't matter when differences are equal (i.e. symmetrical/inverse platform orientation)
+    if (abs(pos_diff[ADJACENT_MOTORS[leading_motor][1]]) >  // difference in the forward direction
+        abs(pos_diff[ADJACENT_MOTORS[leading_motor][0]]))  // difference in the reverse direction
+    {
+        // Order the actuator movement in the forward direction (by increasing actuator number)
+        for (motor = leading_motor; motor < NUM_MOTORS; ++motor)
+        {
+            movement_order.add(motor);
+        }
+        for (motor = 0; movement_order.size() < NUM_MOTORS; ++motor)
+        {
+            movement_order.add(motor);
+        }
+    }
+    else
+    {
+        // Order the actuator movement in the reverse direction (by decreasing actuator number)
+        for (motor = leading_motor; motor >= 0; --motor)
+        {
+            movement_order.add(motor);
+        }
+        for (motor = NUM_MOTORS - 1; movement_order.size() < NUM_MOTORS; --motor)
+        {
+            movement_order.add(motor);
+        }
+    }
+
+    // Execute actuator motion
+    for (list_index = 0; list_index < NUM_MOTORS; ++list_index)
+    {
+        motor = movement_order.get(list_index);
+
         digitalWrite(DIR_PINS[motor], dir[motor]);
         analogWrite(PWM_PINS[motor], pwm[motor]);
     }
@@ -302,10 +326,10 @@ void translateInput()
 
 
 /*
-    Print piece of info for all actuators.
-
-    @param pins: pin array for the info to print (position, PWM, etc.)
-*/
+ * Print piece of info for all actuators.
+ *
+ * @param pins: pin array for the info to print (position, PWM, etc.)
+ */
 void printMotorInfo(int16_t pins[])
 {
     for (motor = 0; motor < NUM_MOTORS; ++motor)
@@ -316,33 +340,13 @@ void printMotorInfo(int16_t pins[])
     SerialUSB.println("");
 }
 
-/*
-    Print position and PWM info for all actuators if within a given interval. 
-*/
-void printPlatformInfo()
-{
-    current_time = millis();
-    if (current_time - previous_time > PRINT_INTERVAL)
-    {
-        SerialUSB.println("Desired Positions: ");
-        printMotorInfo(desired_pos);
-
-        SerialUSB.println("Current Positions: ");
-        printMotorInfo(pos);
-
-        SerialUSB.println("PWM Values");
-        printMotorInfo(pwm);
-
-        previous_time = current_time;
-    }
-}
 
 /*
-    Get an average analogRead value over a certain number of readings
-
-    @param motor: actuator motor number to move (0-5)
-    @return: average reading (int, may be signed)
-*/
+ * Get an average analogRead value over a certain number of readings
+ *
+ * @param motor: actuator motor number to move (0-5)
+ * @return: average reading (int, may be signed)
+ */
 int16_t normalizeAnalogRead(uint8_t motor)
 {
     reading_sum = 0;
@@ -355,42 +359,11 @@ int16_t normalizeAnalogRead(uint8_t motor)
 
 
 /*
-    Moves all actuators in a given direction.
-
-    @param dir: direction (EXTEND/RETRACT) for the actuator
-*/
-void moveAll(MotorDirection dir)
+ * Calibration routine (prints average reading at the extrema for each actuator).
+ * Make sure this is done with the platform disassembled or actuators adjusted to prevent mechanical failure.
+ */
+void calibrate()
 {
-    for (motor = 0; motor < NUM_MOTORS; ++motor)
-    {
-        digitalWrite(DIR_PINS[motor], dir);
-        analogWrite(PWM_PINS[motor], MAX_PWM);
-    }
-}
-
-/*
-    Moves one actuator in a given direction.
-    Prints the raw analogRead position for the call.
-
-    @param motor: actuator motor number to move (0-5)
-    @param dir: direction (EXTEND/RETRACT) for the actuator
-*/
-void moveOne(uint8_t motor, MotorDirection dir)
-{
-    digitalWrite(DIR_PINS[motor], dir);
-    analogWrite(PWM_PINS[motor], MAX_PWM);
-    SerialUSB.println(analogRead(POT_PINS[motor]));
-}
-
-/*
-    Calibration routine for all actuators (put it at the end of setup when necessary).
-    Make sure this is done with the platform disassembled to prevent mechanical failure.
-*/
-void calibrateAll()
-{
-    int16_t max_readings[6];
-    int16_t min_readings[6];
-
     for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
         // Start with extension
@@ -407,7 +380,7 @@ void calibrateAll()
         analogWrite(PWM_PINS[motor], MAX_PWM);
         delay(RESET_DELAY);
 
-        // Stop the extension, get a normalized analog reading
+        // Stop the retraction, get a normalized analog reading
         analogWrite(PWM_PINS[motor], 0);
         min_readings[motor] = normalizeAnalogRead(motor);
 
