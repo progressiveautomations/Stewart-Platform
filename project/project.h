@@ -2,6 +2,7 @@
 //
 #pragma once
 
+// Include Arduino/PA-14P hard-defined settings
 #include "HWDefs.h"
 
 // Local library imports (see the Github page for links/references)
@@ -10,18 +11,11 @@
 #include "StaticThreadController.h"
 #include "Thread.h"
 
-// Platform parameters and bounds
-#define NUM_MOTORS 6
-#define MIN_POS 0  // maximum and minimum position values for all actuators defined by analogRead()
-#define MAX_POS 1023
-#define MAX_PWM 255
-const uint16_t ZERO_POS[NUM_MOTORS] = { 187, 182, 179, 187, 188, 191 };  // measured position bounds by actuator
+#define NUM_MOTORS 6  // platform limitation for number of actuators
+
+// Platform calibration settings (average analog values at extrema for each actuator)
+const uint16_t ZERO_POS[NUM_MOTORS] = { 187, 182, 179, 187, 188, 191 };
 const uint16_t END_POS[NUM_MOTORS] = { 840, 836, 835, 832, 841, 838 };
-const uint16_t ADJACENT_MOTORS[NUM_MOTORS][2] = {
-    // Motors indices directly adjacent to each motor; e.g. motor 5 and 1 are next to motor 0, if indexed 0 to 5
-    // Pairs are ordered by direction of numbering around the platform; i.e. { reverse, forward }
-    { 5, 1 }, { 0, 2 }, { 1, 3 }, { 2, 4 }, { 3, 5 }, { 4, 0 }
-};
 
 // Pin group arrays; each value corresponding to the actuator (see HWDefs.h for specific pins)
 const uint8_t DIR_PINS[NUM_MOTORS] = { DIR_PIN_1, DIR_PIN_2, DIR_PIN_3, DIR_PIN_4, DIR_PIN_5, DIR_PIN_6 };
@@ -29,9 +23,9 @@ const uint8_t PWM_PINS[NUM_MOTORS] = { PWM_PIN_1, PWM_PIN_2, PWM_PIN_3, PWM_PIN_
 const uint8_t POT_PINS[NUM_MOTORS] = { POT_PIN_1, POT_PIN_2, POT_PIN_3, POT_PIN_4, POT_PIN_5, POT_PIN_6 };
 
 // Movement parameters
-#define RESET_DELAY 4000  // at full PWM, the actuator should fully extend/retract in 4s (6" stroke, 2.00"/s)
-#define POSITION_FAR_THRESHOLD 20  // uncertainty for which offset from desired position is acceptable
-#define POSITION_NEAR_THRESHOLD 5
+#define RESET_DELAY 4000  // at full PWM, the actuator should fully extend/retract by 4s (6" stroke, 2.00"/s)
+#define POSITION_FAR_THRESHOLD 20  // position uncertainty for which PWM speed decreases (to reduce overshoot)
+#define POSITION_NEAR_THRESHOLD 5  // position uncertainty that is deemed acceptable (to reduce steady state jitter)
 #define PWM_NEAR 50  // value for PWM when position is in tolerance (but not in position)
 #define PWM_FAR 255  // default PWM value; scaling is disabled in early development
 typedef enum _MotorDirection  // to clarify the direction in which actuators move
@@ -47,13 +41,10 @@ typedef enum _MotorDirection  // to clarify the direction in which actuators mov
 // Serial input parameters
 #define MAX_BUFFER_SIZE 31  // 4 bytes per position (6 digits), 7 for limiter characters
 #define INPUT_TRIGGER 15  // 7 limiter characters + 6 digits + 2 line endings = 15 characters minimum
-#define NUM_READINGS 100 // number of analog readings to normalize to acquire position
+#define NUM_READINGS 100 // number of analog readings to average to acquire position
 #define INPUT_INTERVAL 200  // interval (ms) for input thread
 #define PARSER_INTERVAL 100  // interval (ms) for parser thread
 #define TRANSLATOR_INTERVAL 150 // interval (ms) for translation thread
-const char START_CHAR = '<';
-const char SENTINEL_CHAR = '>';
-const char DELIMITER_CHAR = ',';
 const char TARGET_PATTERN[] = "<(%d?%d?%d?%d),"  // Lua string pattern to match proper input from the input buffer
                                "(%d?%d?%d?%d),"  // matches the last fully received proper string
                                "(%d?%d?%d?%d),"  // requires host configuration to send commands with CR+LF endings

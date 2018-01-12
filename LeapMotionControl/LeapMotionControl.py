@@ -7,12 +7,15 @@ import serial
 import time
 
 # Leap Motion constants
-FRAME_RATE = 5  # number of frames to skip before sending/printing data
+FRAME_RATE = 5  # number of frames to skip before sending/printing data;
+                # frames are skipped to reduce overhead on serial input, and
+                # because their is an upper functional bound due to being rate-limited
+                # by the platform speed/hardware
 
 # Serial constants
 USE_SERIAL = True  # set False for debugging if no Arduino present
 SERIAL_PORT = 'COM4'
-BAUD_RATE = 9600
+BAUD_RATE = 9600  # found to be the most stable standard rate to avoid board hang
 
 # Platform position matrices and constants
 NUM_ACTUATORS = 6
@@ -47,7 +50,6 @@ class LeapListener(Leap.Listener):
                     port=SERIAL_PORT,
                     baudrate=BAUD_RATE,
                     write_timeout=1,  # catch any input hangs (>1s)
-                    # xonxoff=1  # enable software flow control; needs further investigation for noticeable difference
                 )
             except serial.SerialException:
                 print "-E- Serial object unavailable! Exiting..."
@@ -80,31 +82,38 @@ class LeapListener(Leap.Listener):
             if hand.is_valid:
                 # Get hand position, RPY data
                 pos = hand.palm_position
-
                 pitch = hand.direction.pitch
                 yaw = hand.direction.yaw
                 roll = hand.palm_normal.roll
 
+                # Calculate sin,cos of RPY values for matrix entries (for reuse)
+                cos_roll = np.cos(roll)
+                cos_pitch = np.cos(pitch)
+                cos_yaw = np.cos(yaw)
+                sin_roll = np.sin(roll)
+                sin_pitch = np.sin(pitch)
+                sin_yaw = np.sin(yaw)
+
                 # 4x4 affine transform matrix, listed by row entry for easier reading
                 transform_matrix = np.matrix([
                     [
-                        np.cos(yaw) * np.cos(pitch),
-                        np.cos(pitch) * np.sin(yaw),
-                        -np.sin(pitch),
+                        cos_yaw * cos_pitch,
+                        cos_pitch * sin_yaw,
+                        -sin_pitch,
                         0
                     ],
                     
                     [
-                        np.cos(yaw) * np.sin(pitch) * np.sin(roll) - np.sin(yaw) * np.cos(roll),
-                        np.cos(yaw) * np.cos(roll) + np.sin(roll) * np.sin(yaw) * np.sin(pitch),
-                        np.cos(pitch) * np.sin(roll),
+                        cos_yaw * sin_pitch * sin_roll - sin_yaw * cos_roll,
+                        cos_yaw * cos_roll + sin_roll * sin_yaw * sin_pitch,
+                        cos_pitch * sin_roll,
                         0
                     ],
 
                     [
-                        np.cos(yaw) * np.sin(pitch) * np.cos(roll) + np.sin(yaw) * np.sin(roll),
-                        -np.cos(yaw) * np.sin(roll) + np.cos(roll) * np.sin(yaw) * np.sin(pitch),
-                        np.cos(pitch) * np.cos(roll),
+                        cos_yaw * sin_pitch * cos_roll + sin_yaw * sin_roll,
+                        -cos_yaw * sin_roll + cos_roll * sin_yaw * sin_pitch,
+                        cos_pitch * cos_roll,
                         0
                     ],
                     
@@ -129,23 +138,22 @@ class LeapListener(Leap.Listener):
                     actuator_lengths.append(np.linalg.norm(effector_pos[:3,:] - BASE_POS[i].T) - MIN_ACTUATOR_LEN)
 
                 # Assemble actuator lengths into a serial output string (comma delimited, angle bracket enclosed, no spacing)
-                # Include line endings for flexibility on parser side (i.e. if matching string with line endings)
+                # e.g. Final result "<0,1,2,3,4,5>\n\r"; each value can be signed, but will be thrown out if not in [0,1024] 
+                # Include line endings for flexibility on parser side (i.e. if matching end of output with string pattern)
                 ser_string = ''.join(('<', ','.join([str(int(l)) for l in actuator_lengths]), '>\n\r'))
 
                 # Limit the output rate, print and send the input string
                 if self.frame_count > FRAME_RATE:
-                    print ser_string.strip()  # exclude line endings when printing for debug
+                    print ser_string.strip()  # print for debug; don't need line endings in this case
                     if USE_SERIAL:
                         try:
                             self.ser.write(ser_string)
                         except serial.SerialTimeoutException, serial.SerialException:  # try to reopen the device under timeout
-                            for __ in xrange(5):  # print timeout message multiple times for visibility
-                                print "-W- Timeout or port closed detected!"
                             try:
                                 self.ser.close()
                                 self.ser.open()
                             except serial.SerialException:
-                                pass
+                                pass  # unable to reconnect, try again next pass (may raise exception for some abnormal error)
 
                     self.frame_count = 0
                 else:
@@ -161,6 +169,7 @@ def main():
     controller = Leap.Controller()
     controller.add_listener(listener)
 
+    # Continuously grab frames every ~0.5 seconds, exit with CTRL+C
     try:
         while True:
             listener.on_frame(controller)

@@ -1,6 +1,5 @@
 // Main Arduino code for a 6-dof Stewart platform.
 // Written for the Arduino Due.
-// Code hosted at: https://github.com/henrymliu/StewartPlatform
 //
 #include "project.h"
 
@@ -11,9 +10,8 @@ MotorDirection dir[NUM_MOTORS];  // current direcion for each actuator; i.e. EXT
 // Position variables (all signed despite specification difference in order for consistent typing)
 int16_t pos[NUM_MOTORS];  // current position (measured by analog read) of each actuator 
 int16_t desired_pos[NUM_MOTORS];  // desired (user-inputted) position of each actuator
-int16_t pos_diff[NUM_MOTORS];  // difference between current and desired position
+int16_t pos_diff;  // difference between current and desired position
 uint16_t abs_pos_diff;  // absolute pos_diff for an actuator
-uint16_t max_pos_diff;  // maximum abs_pos_diff of all the actuators (i.e. held by leading_motor)
 
 // Thread objects
 Thread input_thread = Thread();  // to get data from the RX buffer
@@ -34,8 +32,6 @@ char match_buf[MAX_BUFFER_SIZE];  // buffer to temporarily store matched values
 int32_t reading_sum;  // sum of multiple readings to be normalized for a final value
 uint16_t input_value;  // matched value obtained from the parser
 uint16_t input_array[NUM_MOTORS];  // final array of position values from the input
-uint8_t leading_motor;  // actuator at the farthest distance from desired position
-LinkedList<uint8_t> movement_order;  // order to move actuators, starting with the leading motor
 
 // Time variables (for printing)
 unsigned long current_time;  // current time (in millis); used to measure difference from previous_time
@@ -52,9 +48,8 @@ int16_t max_readings[NUM_MOTORS];  // average reading for each actuator at full 
 int16_t min_readings[NUM_MOTORS];  // average reading for each actuator at full retraction
 
 // Iterator variables
-uint8_t motor;  // used to iterate through actuators by their numbering; i.e. 0-5
+uint8_t motor;  // used to iterate through actuators by their indexing; i.e. 0-5
 uint8_t reading;  // used to iterate through analog reads
-uint8_t list_index;  // used to iterate through actuators when not sorted by number
 
 
 /*
@@ -229,10 +224,10 @@ void parseInput()
  */
 void translateInput()
 {
-    // Read potentiometer positions and scale them to the Arduino bounds
+    // Read potentiometer positions and scale them to the actuator reading bounds
     for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
-        pos[motor] = map(normalizeAnalogRead(motor),
+        pos[motor] = map(getAverageAnalogRead(motor),
                          ZERO_POS[motor], END_POS[motor],
                          MIN_POS, MAX_POS);
     }
@@ -246,13 +241,11 @@ void translateInput()
         }
     }
 
-    // For each actuator, set movement parameters (direction, PWM) based on position relative to desired
-    // Also find the farthest actuator from its desired position (will be set as the first to move)
-    max_pos_diff = 0;
+    // For each actuator, set movement parameters (direction, PWM) and execute motion
     for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
-        pos_diff[motor] = pos[motor] - desired_pos[motor];
-        abs_pos_diff = abs(pos_diff[motor]);
+        pos_diff = pos[motor] - desired_pos[motor];
+        abs_pos_diff = abs(pos_diff);
 
         // Stop the actuator if it is at (or close enough to) its desired position
         if (abs_pos_diff <= POSITION_NEAR_THRESHOLD)
@@ -272,7 +265,7 @@ void translateInput()
             }
 
             // Set the direction based on over/under-extension
-            if (pos_diff[motor] > 0)
+            if (pos_diff > 0)
             {
                 dir[motor] = RETRACT;
             }
@@ -282,46 +275,6 @@ void translateInput()
             }
         }
 
-        if (abs_pos_diff > max_pos_diff)
-        {
-            max_pos_diff = abs_pos_diff;
-            leading_motor = motor;
-        }
-    }
-
-    // Get the actuator movement order (around the platform) based on the largest position differences
-    // This is to avoid awkward/jerky movement when lower difference actuators are moved first
-    // Direction doesn't matter when differences are equal (i.e. symmetrical/inverse platform orientation)
-    if (abs(pos_diff[ADJACENT_MOTORS[leading_motor][1]]) >  // difference in the forward direction
-        abs(pos_diff[ADJACENT_MOTORS[leading_motor][0]]))  // difference in the reverse direction
-    {
-        // Order the actuator movement in the forward direction (by increasing actuator number)
-        for (motor = leading_motor; motor < NUM_MOTORS; ++motor)
-        {
-            movement_order.add(motor);
-        }
-        for (motor = 0; movement_order.size() < NUM_MOTORS; ++motor)
-        {
-            movement_order.add(motor);
-        }
-    }
-    else
-    {
-        // Order the actuator movement in the reverse direction (by decreasing actuator number)
-        for (motor = leading_motor; motor >= 0; --motor)
-        {
-            movement_order.add(motor);
-        }
-        for (motor = NUM_MOTORS - 1; movement_order.size() < NUM_MOTORS; --motor)
-        {
-            movement_order.add(motor);
-        }
-    }
-
-    // Execute actuator motion
-    for (list_index = 0; list_index < NUM_MOTORS; ++list_index)
-    {
-        motor = movement_order.get(list_index);
         digitalWrite(DIR_PINS[motor], dir[motor]);
         analogWrite(PWM_PINS[motor], pwm[motor]);
     }
@@ -350,7 +303,7 @@ void printMotorInfo(int16_t pins[])
  * @param motor: actuator motor number to move (0-5)
  * @return: average reading (int, may be signed)
  */
-int16_t normalizeAnalogRead(uint8_t motor)
+int16_t getAverageAnalogRead(uint8_t motor)
 {
     reading_sum = 0;
     for (reading = 0; reading < NUM_READINGS; ++reading)
@@ -376,7 +329,7 @@ void calibrate()
 
         // Stop the extension, get a normalized analog reading
         analogWrite(PWM_PINS[motor], 0);
-        max_readings[motor] = normalizeAnalogRead(motor);
+        max_readings[motor] = getAverageAnalogRead(motor);
 
         // Finish with retraction
         digitalWrite(DIR_PINS[motor], RETRACT);
@@ -385,7 +338,7 @@ void calibrate()
 
         // Stop the retraction, get a normalized analog reading
         analogWrite(PWM_PINS[motor], 0);
-        min_readings[motor] = normalizeAnalogRead(motor);
+        min_readings[motor] = getAverageAnalogRead(motor);
 
         // Print results
         SerialUSB.print(min_readings[motor]);
