@@ -1,0 +1,22 @@
+{
+    "configurations": [
+        {
+            "name": "Mac",
+            "includePath": [
+                "/Users/hliu/Library/Arduino15/packages/arduino/hardware/sam/1.6.11/cores/arduino"
+            ],
+            "browse": {
+                "limitSymbolsToIncludedHeaders": false,
+                "path": [
+                    "/Users/hliu/Library/Arduino15/packages/arduino/hardware/sam/1.6.11/cores/arduino"
+                ]
+            },
+            "intelliSenseMode": "clang-x64",
+            "macFrameworkPath": [
+                "/System/Library/Frameworks",
+                "/Library/Frameworks"
+            ]
+        }
+    ],
+    "version": 3
+}
