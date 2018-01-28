@@ -8,8 +8,8 @@ import numpy as np
 NO_SERIAL = False # used for debugging if no Arduino present
 FRAME_RATE = 1 # Number of frames to skip before sending/printing data    
 
-SERIAL_PORT = '/dev/cu.usbmodem1421'
-BAUD_RATE = 74880  # found to be the most stable standard rate to avoid board hang
+SERIAL_PORT = 'COM7'
+BAUD_RATE = 9600  # found to be the most stable standard rate to avoid board hang
 
 NUM_ACTUATORS = 6
 
