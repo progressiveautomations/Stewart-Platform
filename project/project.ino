@@ -124,7 +124,7 @@ void NormalOp()
             SerialUSB.print(pwms[i]); SerialUSB.print(" ");
         }
         SerialUSB.print("\n");
-        
+        previousTime = currentTime;
     }
 
     for (int i = 0; i < NUM_MOTORS; ++i)

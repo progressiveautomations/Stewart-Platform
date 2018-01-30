@@ -17,8 +17,8 @@ const int ZERO_POSITION[NUM_MOTORS] = { 187, 182, 179, 187, 188, 191 };
 const int MAX_POSITION[NUM_MOTORS] = { 840, 836, 835, 832, 841, 838 };
 
 // Serial-related constants
-const int BAUDRATE = 74880;
-const int SERIAL_MIN_AVAILABLE = 15; // minimum number of bytes in serial input buffer before ReadSerial() is called
+const int BAUDRATE = 115200;
+const int SERIAL_MIN_AVAILABLE = 10; // minimum number of bytes in serial input buffer before ReadSerial() is called
 
 // Direction pins
 const int DIR_PINS[NUM_MOTORS] = {37, 39, 41, 31, 33, 35};

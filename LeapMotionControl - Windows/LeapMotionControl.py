@@ -9,7 +9,7 @@ import time
 # Serial constants
 USE_SERIAL = True  # set False for debugging if no Arduino present
 SERIAL_PORT = 'COM7'
-BAUD_RATE = 9600  # found to be the most stable standard rate to avoid board hang
+BAUD_RATE = 115200  # found to be the most stable standard rate to avoid board hang
 
 # Platform position matrices and constants
 NUM_ACTUATORS = 6
@@ -132,7 +132,7 @@ class LeapListener(Leap.Listener):
                     actuator_lengths.append(np.linalg.norm(effector_pos[:3,:] - BASE_POS[i].T) - MIN_ACTUATOR_LEN)
 
                 # Assemble actuator lengths into a serial output string (space-separated)
-                ser_string = ' '.join(str(int(l)) for l in actuator_lengths)
+                ser_string = ''.join([' '.join([str(int(l)) for l in actuator_lengths]), '\n'])
 
                 # Print and send the input string
                 print ser_string.strip()  # print for debug; don't need line endings in this case
