@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
+QT += core gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -22,13 +22,18 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
-
 SOURCES += \
-        main.cpp \
-        stewart_platform.cpp
+    main.cpp \
+    stewart_platform.cpp \
+    leap_event_listener.cpp
 
 HEADERS += \
-        stewart_platform.h
+    stewart_platform.h \
+    leap_event_listener.h
 
 FORMS += \
-        stewart_platform.ui
+    stewart_platform.ui
+
+INCLUDEPATH += \
+    $$(LEAP_SDK) \
+    $$(BOOST_ROOT)

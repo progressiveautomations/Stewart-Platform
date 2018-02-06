@@ -17,6 +17,9 @@ public:
 
 private:
     Ui::StewartPlatform *ui;
+
+private slots:
+    void on_actionExit_triggered();
 };
 
 #endif // STEWART_PLATFORM_H

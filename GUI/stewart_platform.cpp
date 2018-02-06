@@ -12,3 +12,8 @@ StewartPlatform::~StewartPlatform()
 {
     delete ui;
 }
+
+void StewartPlatform::on_actionExit_triggered()
+{
+    QApplication::quit();
+}
