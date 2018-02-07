@@ -25,11 +25,13 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
     main.cpp \
     stewart_platform.cpp \
-    leap_event_listener.cpp
+    leap_event_listener.cpp \
+    serial_port.cpp
 
 HEADERS += \
     stewart_platform.h \
-    leap_event_listener.h
+    leap_event_listener.h \
+    serial_port.h
 
 FORMS += \
     stewart_platform.ui

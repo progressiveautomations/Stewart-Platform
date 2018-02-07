@@ -845,7 +845,6 @@
     <property name="title">
      <string>Options</string>
     </property>
-    <addaction name="actionEnable_Leap_Motion"/>
     <addaction name="actionSelect_COM_port"/>
    </widget>
    <widget class="QMenu" name="menuAbout">

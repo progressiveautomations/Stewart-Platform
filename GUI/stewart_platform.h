@@ -17,6 +17,7 @@ public:
 
 private:
     Ui::StewartPlatform *ui;
+    bool enable_leap;
 
 private slots:
     void on_actionExit_triggered();
