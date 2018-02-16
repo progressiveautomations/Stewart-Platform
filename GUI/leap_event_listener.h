@@ -2,7 +2,11 @@
 #define LEAP_EVENT_LISTENER_H
 
 #include <include/Leap.h>
-#include <boost/numeric/ublas/matrix.hpp>
+#include <QMatrix4x4>
+#include <QVector4D>
+#include <QVector3D>
+
+#include <vector>
 
 using namespace Leap;
 

@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT += core gui
+QT += core gui serialport
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -25,17 +25,15 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
     main.cpp \
     stewart_platform.cpp \
-    leap_event_listener.cpp \
-    serial_port.cpp
+    leap_event_listener.cpp
 
 HEADERS += \
     stewart_platform.h \
     leap_event_listener.h \
-    serial_port.h
+    serial_ports.h
 
 FORMS += \
     stewart_platform.ui
 
 INCLUDEPATH += \
-    $$(LEAP_SDK) \
-    $$(BOOST_ROOT)
+    $$(LEAP_SDK)

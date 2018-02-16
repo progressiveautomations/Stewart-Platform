@@ -18,6 +18,8 @@ public:
 private:
     Ui::StewartPlatform *ui;
     bool enable_leap;
+    std::vector<int> actuator_positions;
+    const int num_actuators = 6;
 
 private slots:
     void on_actionExit_triggered();
