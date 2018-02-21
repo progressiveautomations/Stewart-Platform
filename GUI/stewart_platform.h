@@ -2,8 +2,6 @@
 #define STEWART_PLATFORM_H
 
 #include <QMainWindow>
-#include <QSerialPort>
-#include <QSerialPortInfo>
 #include <QMessageBox>
 #include <QMap>
 

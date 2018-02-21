@@ -7,8 +7,11 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
     StewartPlatform w;
-    Controller controller;
+
+    // Init Leap Motion controller
+    Leap::Controller controller;
     controller.addListener(*(w.leap));
+
     w.show();
     int ac = a.exec();
     controller.removeListener(*(w.leap));

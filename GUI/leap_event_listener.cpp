@@ -1,26 +1,26 @@
 #include "leap_event_listener.h"
 
-void LeapEventListener::onConnect(const Controller&)
+void LeapEventListener::onConnect(const Leap::Controller&)
 {
     this->is_connected = true;
     emit LeapConnected(true);
 }
 
-void LeapEventListener::onDisconnect(const Controller&)
+void LeapEventListener::onDisconnect(const Leap::Controller&)
 {
     this->is_connected = false;
     emit LeapConnected(false);
 }
 
-void LeapEventListener::onFrame(const Controller &controller)
+void LeapEventListener::onFrame(const Leap::Controller &controller)
 {
-    const Frame frame = controller.frame();
+    const Leap::Frame frame = controller.frame();
     if (frame.hands().count() > 0 && is_leap_enabled)
     {
-        Hand hand = frame.hands().rightmost();
+        Leap::Hand hand = frame.hands().rightmost();
         if (hand.isValid())
         {
-            Vector pos =  hand.palmPosition();
+            Leap::Vector pos =  hand.palmPosition();
             qreal pitch = hand.direction().pitch();
             qreal yaw = hand.direction().yaw();
             qreal roll = hand.palmNormal().roll();

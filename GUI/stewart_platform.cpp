@@ -38,6 +38,7 @@ StewartPlatform::StewartPlatform(QWidget *parent) :
 
     // Initialize status labels
     ui->label_serial_val->setText(tr("Disconnected"));
+    ui->label_leap_val->setText(tr("Disconnected"));
     connect(leap, &LeapEventListener::LeapConnected, this, &StewartPlatform::onLeapConnected);
 
     // Send button deinitialized
@@ -159,5 +160,5 @@ void StewartPlatform::onLeapConnected(bool c)
 {
     // Update connection status
     ui->label_leap_val->setText((c) ? tr("Connected") : ("Disconnected"));
-
+    Log((c) ? tr("Leap Motion connected") : tr("Leap Motion disconnected"));
 }
