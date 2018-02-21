@@ -32,16 +32,17 @@ public:
     // PRECONDITION: m_serial must be open
     void writeSerialData(const char* data);
 
+    // Constants
+    const static int NUM_ACTUATORS = 6;
+    const static int MIN_ACTUATOR_VALUE = 0;
+    const static int MAX_ACTUATOR_VALUE = 1024;
+
+public slots:
     // Converts actuator_positions vector into a single command string, sends over serial.
     // PRECONDITION: m_serial must be open
-    void SendActuatorPositions();
+    void SendActuatorPositions(QVector<int> actuator_pos);
 
 private:
-    // Constants
-    const int NUM_ACTUATORS = 6;
-    const int MAX_OUTPUT_DATA_SIZE = 30;
-    const int MAX_ACTUATOR_VALUE = 1024;
-    const int MIN_ACTUATOR_VALUE = 0;
 
     // Variables representing platform state
     bool enable_leap;

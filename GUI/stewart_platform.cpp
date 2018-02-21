@@ -59,7 +59,7 @@ StewartPlatform::StewartPlatform(QWidget *parent) :
     connect(m_serial, &QSerialPort::errorOccurred, this, &StewartPlatform::closeSerialPort);
 
     // Send actuator_positions values over serial
-    connect(ui->button_send, &QPushButton::clicked, this, &StewartPlatform::SendActuatorPositions);
+    connect(ui->button_send, &QPushButton::clicked, this, [=](){this->SendActuatorPositions(this->actuator_positions);});
 }
 
 StewartPlatform::~StewartPlatform()
@@ -81,13 +81,13 @@ void StewartPlatform::Log(const QString &entry)
     ui->log->insertPlainText(entry + "\n");
 }
 
-void StewartPlatform::SendActuatorPositions()
+void StewartPlatform::SendActuatorPositions(QVector<int> actuator_pos)
 {
     QString s = "";
     for(int i = 0; i < NUM_ACTUATORS; ++i)
     {
         // Convert each actuator int to string, add space if not last element, else new line
-        s += QString::number(actuator_positions[i]) + ((i < (NUM_ACTUATORS - 1)) ? " " : "\n");
+        s += QString::number(actuator_pos[i]) + ((i < (NUM_ACTUATORS - 1)) ? " " : "\n");
     }
     writeSerialData(qPrintable(s));
 }
