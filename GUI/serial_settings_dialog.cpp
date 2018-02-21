@@ -50,7 +50,7 @@
 ****************************************************************************/
 
 #include "serial_settings_dialog.h"
-#include "ui_settingsdialog.h"
+#include "ui_serial_settings_dialog.h"
 
 #include <QIntValidator>
 #include <QLineEdit>

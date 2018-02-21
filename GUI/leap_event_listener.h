@@ -16,12 +16,11 @@ class LeapEventListener : public QObject, public Listener
 {
     Q_OBJECT
 public:
-    bool isConnected();
+    bool is_leap_enabled = false;
 
 signals:
-    void LeapAvailable();
-    void LeapDisconnected();
-    void LeapFrameUpdate();
+    void LeapConnected(bool);
+    void LeapFrameUpdate(QVector<int>);
 
 private:
     virtual void onConnect(const Controller&);

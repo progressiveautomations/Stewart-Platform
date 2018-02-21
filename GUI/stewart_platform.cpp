@@ -4,9 +4,11 @@ StewartPlatform::StewartPlatform(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::StewartPlatform),
     m_settings(new SerialSettingsDialog),
-    m_serial(new QSerialPort(this))
+    m_serial(new QSerialPort(this)),
+    leap(new LeapEventListener())
 {
     ui->setupUi(this);
+
     // Setup map of manual control elements
     actuator_positions = {0, 0, 0, 0, 0, 0};
     manual_adjust = {{ui->field_1, ui->slider_1}, {ui->field_2, ui->slider_2}, {ui->field_3, ui->slider_3}, {ui->field_4, ui->slider_4}, {ui->field_5, ui->slider_5}, {ui->field_6, ui->slider_6}};
@@ -36,15 +38,12 @@ StewartPlatform::StewartPlatform(QWidget *parent) :
 
     // Initialize status labels
     ui->label_serial_val->setText(tr("Disconnected"));
-    ui->label_leap_val->setText(tr("Disconnected"));
+    connect(leap, &LeapEventListener::LeapConnected, this, &StewartPlatform::onLeapConnected);
 
     // Send button deinitialized
     ui->button_send->setEnabled(false);
 
-    // Leap Motion checkbox disables actuator box, update leap_enabled variable
-    connect(ui->enable_leap_motion, &QCheckBox::toggled, ui->actuatorBox, [=](){ ui->actuatorBox->setEnabled(!ui->enable_leap_motion->isChecked()); this->enable_leap = ui->enable_leap_motion->isChecked();});
-
-    /** Connect the serial-releated signals **/
+    /** Connect serial-releated signals **/
     // Serial logging
     connect(m_serial, &QSerialPort::readyRead, this, &StewartPlatform::readSerialData);
 
@@ -60,6 +59,11 @@ StewartPlatform::StewartPlatform(QWidget *parent) :
 
     // Send actuator_positions values over serial
     connect(ui->button_send, &QPushButton::clicked, this, [=](){this->SendActuatorPositions(this->actuator_positions);});
+
+    /** Leap Motion signals **/
+    // Leap Motion checkbox disables actuator box, update leap_enabled variable
+    connect(ui->enable_leap_motion, &QCheckBox::toggled, ui->actuatorBox, [=](bool c){enableLeapMotion(c);});
+    connect(leap, &LeapEventListener::LeapFrameUpdate, this, &StewartPlatform::SendActuatorPositions);
 }
 
 StewartPlatform::~StewartPlatform()
@@ -69,6 +73,8 @@ StewartPlatform::~StewartPlatform()
 
     closeSerialPort();
     delete m_serial;
+
+    delete leap;
 }
 
 void StewartPlatform::on_actionExit_triggered()
@@ -141,4 +147,17 @@ void StewartPlatform::closeSerialPort()
         ui->label_serial_val->setText(tr("Disconnected"));
         ui->button_send->setEnabled(false);
     }
+}
+
+void StewartPlatform::enableLeapMotion(bool c)
+{
+    ui->actuatorBox->setEnabled(!c);
+    leap->is_leap_enabled = c;
+}
+
+void StewartPlatform::onLeapConnected(bool c)
+{
+    // Update connection status
+    ui->label_leap_val->setText((c) ? tr("Connected") : ("Disconnected"));
+
 }

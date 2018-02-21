@@ -1,26 +1,21 @@
 #include "leap_event_listener.h"
 
-bool LeapEventListener::isConnected()
-{
-    return this->is_connected;
-}
-
 void LeapEventListener::onConnect(const Controller&)
 {
     this->is_connected = true;
-    emit LeapAvailable();
+    emit LeapConnected(true);
 }
 
 void LeapEventListener::onDisconnect(const Controller&)
 {
     this->is_connected = false;
-    emit LeapDisconnected();
+    emit LeapConnected(false);
 }
 
 void LeapEventListener::onFrame(const Controller &controller)
 {
     const Frame frame = controller.frame();
-    if (frame.hands().count() > 0)
+    if (frame.hands().count() > 0 && is_leap_enabled)
     {
         Hand hand = frame.hands().rightmost();
         if (hand.isValid())
@@ -48,7 +43,7 @@ void LeapEventListener::onFrame(const Controller &controller)
                 QVector4D eff_pos = transform_matrix * END_EFF_POS[i] + QVector4D(pos.x, -pos.z, pos.y + HOME_POSITION_HEIGHT, 0.0f);
                 actuator_lengths[i] = static_cast<int>((eff_pos.toVector3D() - BASE_POS[i]).length() - MIN_ACTUATOR_LEN);
             }
-            // TODO: figure out how to update StewartPlatform::actuator_lengths
+            emit LeapFrameUpdate(actuator_lengths);
         }
     }
 }
