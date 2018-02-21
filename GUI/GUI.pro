@@ -25,15 +25,19 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
     main.cpp \
     stewart_platform.cpp \
-    leap_event_listener.cpp
+    serial_settings_dialog.cpp \
+    leap_event_listener.h
 
 HEADERS += \
     stewart_platform.h \
-    leap_event_listener.h \
-    serial_ports.h
+    serial_settings_dialog.h \
+    leap_event_listener.h
 
 FORMS += \
-    stewart_platform.ui
+    stewart_platform.ui \
+    serial_settings_dialog.ui
 
 INCLUDEPATH += \
     $$(LEAP_SDK)
+
+message($$INCLUDEPATH)

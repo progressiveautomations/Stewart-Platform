@@ -58,7 +58,7 @@
          </property>
          <layout class="QHBoxLayout" name="horizontalLayout">
           <item>
-           <widget class="QTextBrowser" name="log">
+           <widget class="QPlainTextEdit" name="log">
             <property name="frameShape">
              <enum>QFrame::Box</enum>
             </property>
@@ -67,6 +67,9 @@
             </property>
             <property name="lineWidth">
              <number>1</number>
+            </property>
+            <property name="readOnly">
+             <bool>true</bool>
             </property>
            </widget>
           </item>
@@ -832,7 +835,7 @@
      <x>0</x>
      <y>0</y>
      <width>700</width>
-     <height>25</height>
+     <height>20</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuTest">
