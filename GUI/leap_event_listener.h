@@ -10,7 +10,7 @@
 
 using namespace Leap;
 
-class LeapEventListener : public Listener, public QObject
+class LeapEventListener : public QObject, public Listener
 {
     Q_OBJECT
 public:

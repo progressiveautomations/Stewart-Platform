@@ -26,7 +26,7 @@ SOURCES += \
     main.cpp \
     stewart_platform.cpp \
     serial_settings_dialog.cpp \
-    leap_event_listener.h
+    leap_event_listener.cpp
 
 HEADERS += \
     stewart_platform.h \
@@ -40,4 +40,4 @@ FORMS += \
 INCLUDEPATH += \
     $$(LEAP_SDK)
 
-message($$INCLUDEPATH)
+LIBS += $$(LEAP_SDK)/lib/x64/Leap.lib

@@ -42,7 +42,7 @@ StewartPlatform::StewartPlatform(QWidget *parent) :
     ui->button_send->setEnabled(false);
 
     // Leap Motion checkbox disables actuator box, update leap_enabled variable
-    connect(ui->enable_leap_motion, &QCheckBox::toggled, ui->actuatorBox, [=](){ ui->actuatorBox->setEnabled(!ui->enable_leap_motion->isChecked()); this->enable_leap = ui->enable_leap_motion->isChecked()});
+    connect(ui->enable_leap_motion, &QCheckBox::toggled, ui->actuatorBox, [=](){ ui->actuatorBox->setEnabled(!ui->enable_leap_motion->isChecked()); this->enable_leap = ui->enable_leap_motion->isChecked();});
 
     /** Connect the serial-releated signals **/
     // Serial logging
