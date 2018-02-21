@@ -10,10 +10,16 @@
 
 using namespace Leap;
 
-class LeapEventListener : public Listener
+class LeapEventListener : public Listener, public QObject
 {
+    Q_OBJECT
 public:
     bool isConnected();
+
+signals:
+    void LeapAvailable();
+    void LeapDisconnected();
+    void LeapFrameUpdate();
 
 private:
     virtual void onConnect(const Controller&);

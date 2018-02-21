@@ -222,10 +222,17 @@
          <property name="sizeHint" stdset="0">
           <size>
            <width>20</width>
-           <height>10</height>
+           <height>0</height>
           </size>
          </property>
         </spacer>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="enable_leap_motion">
+         <property name="text">
+          <string>Use Leap Motion</string>
+         </property>
+        </widget>
        </item>
        <item>
         <widget class="QGroupBox" name="actuatorBox">
@@ -291,40 +298,6 @@
            <string>Actuator 1:</string>
           </property>
          </widget>
-         <widget class="QLineEdit" name="field_1">
-          <property name="geometry">
-           <rect>
-            <x>90</x>
-            <y>30</y>
-            <width>75</width>
-            <height>20</height>
-           </rect>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>75</width>
-            <height>20</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>75</width>
-            <height>20</height>
-           </size>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="maxLength">
-           <number>4</number>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-          </property>
-          <property name="placeholderText">
-           <string/>
-          </property>
-         </widget>
          <widget class="QPushButton" name="button_send">
           <property name="geometry">
            <rect>
@@ -365,6 +338,9 @@
             <height>20</height>
            </size>
           </property>
+          <property name="maximum">
+           <number>1024</number>
+          </property>
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
           </property>
@@ -404,40 +380,6 @@
            <string>Actuator 2:</string>
           </property>
          </widget>
-         <widget class="QLineEdit" name="field_2">
-          <property name="geometry">
-           <rect>
-            <x>90</x>
-            <y>60</y>
-            <width>75</width>
-            <height>20</height>
-           </rect>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>75</width>
-            <height>20</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>75</width>
-            <height>20</height>
-           </size>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="maxLength">
-           <number>4</number>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-          </property>
-          <property name="placeholderText">
-           <string/>
-          </property>
-         </widget>
          <widget class="QSlider" name="slider_2">
           <property name="geometry">
            <rect>
@@ -452,6 +394,9 @@
             <width>0</width>
             <height>20</height>
            </size>
+          </property>
+          <property name="maximum">
+           <number>1024</number>
           </property>
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
@@ -492,40 +437,6 @@
            <string>Actuator 3:</string>
           </property>
          </widget>
-         <widget class="QLineEdit" name="field_3">
-          <property name="geometry">
-           <rect>
-            <x>90</x>
-            <y>90</y>
-            <width>75</width>
-            <height>20</height>
-           </rect>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>75</width>
-            <height>20</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>75</width>
-            <height>20</height>
-           </size>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="maxLength">
-           <number>4</number>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-          </property>
-          <property name="placeholderText">
-           <string/>
-          </property>
-         </widget>
          <widget class="QSlider" name="slider_3">
           <property name="geometry">
            <rect>
@@ -540,6 +451,9 @@
             <width>0</width>
             <height>20</height>
            </size>
+          </property>
+          <property name="maximum">
+           <number>1024</number>
           </property>
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
@@ -580,40 +494,6 @@
            <string>Actuator 4:</string>
           </property>
          </widget>
-         <widget class="QLineEdit" name="field_4">
-          <property name="geometry">
-           <rect>
-            <x>90</x>
-            <y>120</y>
-            <width>75</width>
-            <height>20</height>
-           </rect>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>75</width>
-            <height>20</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>75</width>
-            <height>20</height>
-           </size>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="maxLength">
-           <number>4</number>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-          </property>
-          <property name="placeholderText">
-           <string/>
-          </property>
-         </widget>
          <widget class="QSlider" name="slider_4">
           <property name="geometry">
            <rect>
@@ -628,6 +508,9 @@
             <width>0</width>
             <height>20</height>
            </size>
+          </property>
+          <property name="maximum">
+           <number>1024</number>
           </property>
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
@@ -668,40 +551,6 @@
            <string>Actuator 5:</string>
           </property>
          </widget>
-         <widget class="QLineEdit" name="field_5">
-          <property name="geometry">
-           <rect>
-            <x>90</x>
-            <y>150</y>
-            <width>75</width>
-            <height>20</height>
-           </rect>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>75</width>
-            <height>20</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>75</width>
-            <height>20</height>
-           </size>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="maxLength">
-           <number>4</number>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-          </property>
-          <property name="placeholderText">
-           <string/>
-          </property>
-         </widget>
          <widget class="QSlider" name="slider_5">
           <property name="geometry">
            <rect>
@@ -716,6 +565,9 @@
             <width>0</width>
             <height>20</height>
            </size>
+          </property>
+          <property name="maximum">
+           <number>1024</number>
           </property>
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
@@ -756,40 +608,6 @@
            <string>Actuator 6:</string>
           </property>
          </widget>
-         <widget class="QLineEdit" name="field_6">
-          <property name="geometry">
-           <rect>
-            <x>90</x>
-            <y>180</y>
-            <width>75</width>
-            <height>20</height>
-           </rect>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>75</width>
-            <height>20</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>75</width>
-            <height>20</height>
-           </size>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="maxLength">
-           <number>4</number>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-          </property>
-          <property name="placeholderText">
-           <string/>
-          </property>
-         </widget>
          <widget class="QSlider" name="slider_6">
           <property name="geometry">
            <rect>
@@ -805,8 +623,71 @@
             <height>20</height>
            </size>
           </property>
+          <property name="maximum">
+           <number>1024</number>
+          </property>
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+         <widget class="QSpinBox" name="field_1">
+          <property name="geometry">
+           <rect>
+            <x>90</x>
+            <y>30</y>
+            <width>71</width>
+            <height>21</height>
+           </rect>
+          </property>
+         </widget>
+         <widget class="QSpinBox" name="field_2">
+          <property name="geometry">
+           <rect>
+            <x>90</x>
+            <y>60</y>
+            <width>71</width>
+            <height>21</height>
+           </rect>
+          </property>
+         </widget>
+         <widget class="QSpinBox" name="field_3">
+          <property name="geometry">
+           <rect>
+            <x>90</x>
+            <y>90</y>
+            <width>71</width>
+            <height>21</height>
+           </rect>
+          </property>
+         </widget>
+         <widget class="QSpinBox" name="field_4">
+          <property name="geometry">
+           <rect>
+            <x>90</x>
+            <y>120</y>
+            <width>71</width>
+            <height>21</height>
+           </rect>
+          </property>
+         </widget>
+         <widget class="QSpinBox" name="field_5">
+          <property name="geometry">
+           <rect>
+            <x>90</x>
+            <y>150</y>
+            <width>71</width>
+            <height>21</height>
+           </rect>
+          </property>
+         </widget>
+         <widget class="QSpinBox" name="field_6">
+          <property name="geometry">
+           <rect>
+            <x>90</x>
+            <y>180</y>
+            <width>71</width>
+            <height>21</height>
+           </rect>
           </property>
          </widget>
         </widget>
@@ -819,7 +700,7 @@
          <property name="sizeHint" stdset="0">
           <size>
            <width>20</width>
-           <height>40</height>
+           <height>10</height>
           </size>
          </property>
         </spacer>
