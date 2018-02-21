@@ -48,7 +48,7 @@ StewartPlatform::StewartPlatform(QWidget *parent) :
     connect(m_serial, &QSerialPort::readyRead, this, &StewartPlatform::readSerialData);
 
     // Serial Settings dialog
-    connect(ui->actionSelect_COM_port, &QAction::triggered, m_settings, &SerialSettingsDialog::show);
+    connect(ui->actionSelect_COM_port, &QAction::triggered, m_settings, &SerialSettingsDialog::ShowAndUpdatePortInfo);
 
     // Connect to serial port
     connect(m_settings, &SerialSettingsDialog::SettingsUpdated, this, &StewartPlatform::openSerialPort);

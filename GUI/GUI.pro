@@ -40,4 +40,10 @@ FORMS += \
 INCLUDEPATH += \
     $$(LEAP_SDK)
 
-LIBS += $$(LEAP_SDK)/lib/x64/Leap.lib
+win32: LIBS += -L$$(LEAP_SDK)/lib/x64/ -lLeap
+
+INCLUDEPATH += $$(LEAP_SDK)/lib/x64
+DEPENDPATH += $$(LEAP_SDK)/lib/x64
+
+win32:!win32-g++: PRE_TARGETDEPS += $$(LEAP_SDK)/lib/x64/Leap.lib
+else:win32-g++: PRE_TARGETDEPS += $$(LEAP_SDK)/lib/x64/libLeap.a

@@ -90,6 +90,9 @@ public:
 
     Settings settings() const;
 
+public slots:
+    void ShowAndUpdatePortInfo();
+
 signals:
     void SettingsUpdated();
 

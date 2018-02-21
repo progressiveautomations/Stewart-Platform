@@ -87,6 +87,12 @@ SerialSettingsDialog::~SerialSettingsDialog()
     delete m_ui;
 }
 
+void SerialSettingsDialog::ShowAndUpdatePortInfo()
+{
+    fillPortsInfo();
+    show();
+}
+
 SerialSettingsDialog::Settings SerialSettingsDialog::settings() const
 {
     return m_currentSettings;
