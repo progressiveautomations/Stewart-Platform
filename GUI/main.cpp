@@ -9,6 +9,7 @@ int main(int argc, char *argv[])
     StewartPlatform w;
 
     // Init Leap Motion controller
+    qRegisterMetaType<QVector<int>>();
     Leap::Controller controller;
     controller.addListener(*(w.leap));
 
