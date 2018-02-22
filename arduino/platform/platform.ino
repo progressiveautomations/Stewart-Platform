@@ -100,7 +100,7 @@ void readSerial()
     // Set the input as the desired positions
     for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
-        total_diff[motor] = 0;
+        total_diff[motor] = 0;  // reset integral feedback given a new target
         desired_pos[motor] = input[motor];
     }
 }

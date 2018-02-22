@@ -4,11 +4,12 @@
 
 #include "pin_layout.h"
 
+// Platform parameters
 #define NUM_MOTORS 6
 
+// Actuator value bounds
 #define MIN_POS 0
 #define MAX_POS 1024
-
 #define MIN_PWM 0
 #define MAX_PWM 255
 
@@ -29,7 +30,7 @@ typedef enum _MotorDirection  // to clarify the direction in which actuators mov
     EXTEND = 1
 } MotorDirection;
 
-// Feedback parameters (for PID control)
+// PID feedback parameters
 // TODO: to be fine-tuned
 #define P_COEFF 0.1
 #define I_COEFF 0.1
