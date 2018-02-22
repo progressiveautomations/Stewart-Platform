@@ -1,5 +1,5 @@
 # StewartPlatform
 
-Requirements: Visual Studio (minimum 2015) with Visual Micro extension (which requires the Arduino IDE installed): https://marketplace.visualstudio.com/items?itemName=VisualMicro.ArduinoIDEforVisualStudio
+For Leap Motion control with Python: Python 2.7 x64 on Windows/MacOS (NB: for MacOS use version downloaded from python.org), with numpy and pyserial installed.
 
-Python 2.7 x64 on Windows, with numpy and pyserial installed.
+For GUI: Qt 5 (5.10.1 recommended), with serialport module in addition to the core libraries
