@@ -6,9 +6,10 @@
 
 #define NUM_MOTORS 6
 
-// Max/min Arduino values for position/PWM
 #define MIN_POS 0
 #define MAX_POS 1024
+
+#define MIN_PWM 0
 #define MAX_PWM 255
 
 // Platform calibration settings (average analog values at extrema for each actuator)
@@ -22,15 +23,17 @@ const uint8_t POT_PINS[NUM_MOTORS] = { POT_PIN_1, POT_PIN_2, POT_PIN_3, POT_PIN_
 
 // Movement parameters
 #define RESET_DELAY 4000  // at full PWM, the actuator should fully extend/retract by 4s (6" stroke, 2.00"/s)
-#define POSITION_FAR_THRESHOLD 20  // position uncertainty for which PWM speed decreases (to reduce overshoot)
-#define POSITION_NEAR_THRESHOLD 5  // position uncertainty that is deemed acceptable (to reduce steady state jitter)
-#define PWM_NEAR 50  // value for PWM when position is in tolerance (but not in position)
-#define PWM_FAR 255  // default PWM value; scaling is disabled in early development
 typedef enum _MotorDirection  // to clarify the direction in which actuators move
 {
     RETRACT = 0,
     EXTEND = 1
 } MotorDirection;
+
+// Feedback parameters (for PID control)
+// TODO: to be fine-tuned
+#define P_COEFF 0.1
+#define I_COEFF 0.1
+#define D_COEFF 0.1
 
 // Serial configuration parameters
 #define BAUD_RATE 115200

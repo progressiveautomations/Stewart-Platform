@@ -4,16 +4,24 @@
 #include "platform.h"
 
 // Actuator variables
-
-uint8_t pwm[NUM_MOTORS];  // current PWM for each actuator (0 to MAX_PWM)
+uint8_t pwm[NUM_MOTORS];  // current PWM for each actuator
 MotorDirection dir[NUM_MOTORS];  // current direction for each actuator (EXTEND or RETRACT)
 
 // Position variables
 int16_t pos[NUM_MOTORS];  // current position (measured by analog read) of each actuator
 int16_t input[NUM_MOTORS];  // intermediate input retrieved from the serial buffer
 uint16_t desired_pos[NUM_MOTORS]; // desired (user-inputted and validated) position of each actuator
+
+// Feedback variables
 int16_t pos_diff;  // difference between current and desired position
-uint16_t abs_pos_diff;  // absolute pos_diff for an actuator
+int16_t previous_diff[NUM_MOTORS];  // last position difference for each actuator; for derivative gain
+int16_t total_diff[NUM_MOTORS];  // cumulative position difference for each actuator; for integral gain
+uint8_t previous_inst[NUM_MOTORS];  // starting/past sample instance for each actuator; for derivative gain
+uint8_t current_inst[NUM_MOTORS];  // new/incrementing sample instance for each actuator; for derivative gain
+float p_corr;  // proportional correction for PID
+float i_corr;  // integral correction for PID
+float d_corr; // differential correction for PID
+float corr;  // final feedback PWM value from PID correction
 
 // Time variables (for printing)
 unsigned long current_time;  // current time (in millis); used to measure difference from previous_time
@@ -52,6 +60,7 @@ void setup()
     delay(RESET_DELAY);
     for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
+        total_diff[motor] = 0;
         desired_pos[motor] = 0;
         pwm[motor] = 0;
     }
@@ -69,8 +78,7 @@ void loop()
 {
     // Comment out one of calibrate() and normalOp()
     // calibrate();
-    // normalOp();
-    moveAll(RETRACT);
+    normalOp();
 }
 
 /*
@@ -92,6 +100,7 @@ void readSerial()
     // Set the input as the desired positions
     for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
+        total_diff[motor] = 0;
         desired_pos[motor] = input[motor];
     }
 }
@@ -174,25 +183,34 @@ void normalOp()
     // For each actuator, set movement parameters (direction, PWM) and execute motion
     for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
+        // Compute the error value
         pos_diff = pos[motor] - desired_pos[motor];
-        abs_pos_diff = abs(pos_diff);
 
-        // Stop the actuator if it is at (or close enough to) its desired position
-        if (abs_pos_diff <= POSITION_NEAR_THRESHOLD)
+        // Compute error-dependent PID variables
+        total_diff[motor] += pos_diff;
+        if (previous_diff[motor] != pos_diff)
         {
-            pwm[motor] = 0;
-        }
-        else
-        {
-            // Set a slower PWM if the actuator is close to the desired position
-            pwm[motor] = (abs_pos_diff <= POSITION_FAR_THRESHOLD) ? PWM_NEAR : PWM_FAR;
-
-            // Set the direction based on over/under-extension
-            dir[motor] = (pos_diff > 0) ? RETRACT : EXTEND;
+            previous_inst[motor] = current_inst[motor];
+            current_inst[motor] = 1;
         }
 
+        // Compute PID gain values
+        p_corr = P_COEFF * pos_diff;
+        i_corr = I_COEFF * total_diff[motor];
+        d_corr = D_COEFF * ((float) pos_diff - previous_diff[motor]) / (current_inst[motor] + previous_inst[motor]);
+
+        // Compute the correction value and set the direction and PWM for the actuator
+        corr = p_corr + i_corr + d_corr;
+        dir[motor] = (corr > 0) ? RETRACT : EXTEND;
+        pwm[motor] = constrain(abs(corr), MIN_PWM, MAX_PWM);
+
+        // Send the direction and PWM commands
         digitalWrite(DIR_PINS[motor], dir[motor]);
         analogWrite(PWM_PINS[motor], pwm[motor]);
+
+        // Increment sample-dependent PID variables for the next sampling time
+        current_inst[motor] += 1;
+        previous_diff[motor] = pos_diff;
     }
 }
 
@@ -211,7 +229,7 @@ void calibrate()
         analogWrite(PWM_PINS[motor], MAX_PWM);
         delay(RESET_DELAY);
 
-        // Stop the extension, get a normalized analog reading
+        // Stop the extension, get an averaged analog reading
         analogWrite(PWM_PINS[motor], 0);
         max_readings[motor] = getAverageReading(motor);
 
@@ -220,7 +238,7 @@ void calibrate()
         analogWrite(PWM_PINS[motor], MAX_PWM);
         delay(RESET_DELAY);
 
-        // Stop the retraction, get a normalized analog reading
+        // Stop the retraction, get an averaged analog reading
         analogWrite(PWM_PINS[motor], 0);
         min_readings[motor] = getAverageReading(motor);
 
