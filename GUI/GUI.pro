@@ -47,3 +47,8 @@ DEPENDPATH += $$(LEAP_SDK)/lib/x64
 
 win32:!win32-g++: PRE_TARGETDEPS += $$(LEAP_SDK)/lib/x64/Leap.lib
 else:win32-g++: PRE_TARGETDEPS += $$(LEAP_SDK)/lib/x64/libLeap.a
+
+macx: LIBS += -L$$(LEAP_SDK)/lib/ -lLeap
+
+INCLUDEPATH += $$(LEAP_SDK)/include
+DEPENDPATH += $$(LEAP_SDK)/include
