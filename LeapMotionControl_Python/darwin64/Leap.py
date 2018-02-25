@@ -729,6 +729,9 @@ class Hand(Interface):
     def finger(self, id):
         return LeapPython.Hand_finger(self, id)
 
+    def tool(self, id):
+        return LeapPython.Hand_tool(self, id)
+
     def translation(self, sinceFrame):
         return LeapPython.Hand_translation(self, sinceFrame)
 
@@ -770,6 +773,9 @@ class Hand(Interface):
     __swig_getmethods__["fingers"] = LeapPython.Hand_fingers_get
     if _newclass:
         fingers = _swig_property(LeapPython.Hand_fingers_get)
+    __swig_getmethods__["tools"] = LeapPython.Hand_tools_get
+    if _newclass:
+        tools = _swig_property(LeapPython.Hand_tools_get)
     __swig_getmethods__["palm_position"] = LeapPython.Hand_palm_position_get
     if _newclass:
         palm_position = _swig_property(LeapPython.Hand_palm_position_get)
@@ -794,12 +800,6 @@ class Hand(Interface):
     __swig_getmethods__["sphere_radius"] = LeapPython.Hand_sphere_radius_get
     if _newclass:
         sphere_radius = _swig_property(LeapPython.Hand_sphere_radius_get)
-    __swig_getmethods__["grab_angle"] = LeapPython.Hand_grab_angle_get
-    if _newclass:
-        grab_angle = _swig_property(LeapPython.Hand_grab_angle_get)
-    __swig_getmethods__["pinch_distance"] = LeapPython.Hand_pinch_distance_get
-    if _newclass:
-        pinch_distance = _swig_property(LeapPython.Hand_pinch_distance_get)
     __swig_getmethods__["grab_strength"] = LeapPython.Hand_grab_strength_get
     if _newclass:
         grab_strength = _swig_property(LeapPython.Hand_grab_strength_get)
@@ -1077,6 +1077,71 @@ def KeyTapGesture_class_type():
     return LeapPython.KeyTapGesture_class_type()
 KeyTapGesture_class_type = LeapPython.KeyTapGesture_class_type
 
+class Screen(Interface):
+    __swig_setmethods__ = {}
+    for _s in [Interface]:
+        __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
+    __setattr__ = lambda self, name, value: _swig_setattr(self, Screen, name, value)
+    __swig_getmethods__ = {}
+    for _s in [Interface]:
+        __swig_getmethods__.update(getattr(_s, '__swig_getmethods__', {}))
+    __getattr__ = lambda self, name: _swig_getattr(self, Screen, name)
+    __repr__ = _swig_repr
+
+    def __init__(self):
+        this = LeapPython.new_Screen()
+        try:
+            self.this.append(this)
+        except:
+            self.this = this
+
+    def intersect(self, *args):
+        return LeapPython.Screen_intersect(self, *args)
+
+    def project(self, position, normalize, clampRatio=1.0):
+        return LeapPython.Screen_project(self, position, normalize, clampRatio)
+
+    def normal(self):
+        return LeapPython.Screen_normal(self)
+
+    def distance_to_point(self, point):
+        return LeapPython.Screen_distance_to_point(self, point)
+
+    def __eq__(self, arg2):
+        return LeapPython.Screen___eq__(self, arg2)
+
+    def __ne__(self, arg2):
+        return LeapPython.Screen___ne__(self, arg2)
+
+    def __str__(self):
+        return LeapPython.Screen___str__(self)
+    __swig_getmethods__["id"] = LeapPython.Screen_id_get
+    if _newclass:
+        id = _swig_property(LeapPython.Screen_id_get)
+    __swig_getmethods__["horizontal_axis"] = LeapPython.Screen_horizontal_axis_get
+    if _newclass:
+        horizontal_axis = _swig_property(LeapPython.Screen_horizontal_axis_get)
+    __swig_getmethods__["vertical_axis"] = LeapPython.Screen_vertical_axis_get
+    if _newclass:
+        vertical_axis = _swig_property(LeapPython.Screen_vertical_axis_get)
+    __swig_getmethods__["bottom_left_corner"] = LeapPython.Screen_bottom_left_corner_get
+    if _newclass:
+        bottom_left_corner = _swig_property(LeapPython.Screen_bottom_left_corner_get)
+    __swig_getmethods__["width_pixels"] = LeapPython.Screen_width_pixels_get
+    if _newclass:
+        width_pixels = _swig_property(LeapPython.Screen_width_pixels_get)
+    __swig_getmethods__["height_pixels"] = LeapPython.Screen_height_pixels_get
+    if _newclass:
+        height_pixels = _swig_property(LeapPython.Screen_height_pixels_get)
+    __swig_getmethods__["is_valid"] = LeapPython.Screen_is_valid_get
+    if _newclass:
+        is_valid = _swig_property(LeapPython.Screen_is_valid_get)
+    __swig_destroy__ = LeapPython.delete_Screen
+    __del__ = lambda self: None
+Screen_swigregister = LeapPython.Screen_swigregister
+Screen_swigregister(Screen)
+Screen.invalid = LeapPython.cvar.Screen_invalid
+
 class Device(Interface):
     __swig_setmethods__ = {}
     for _s in [Interface]:
@@ -1088,9 +1153,8 @@ class Device(Interface):
     __getattr__ = lambda self, name: _swig_getattr(self, Device, name)
     __repr__ = _swig_repr
     TYPE_PERIPHERAL = LeapPython.Device_TYPE_PERIPHERAL
-    TYPE_HP_LEGACY = LeapPython.Device_TYPE_HP_LEGACY
-    TYPE_KEYBOARD = LeapPython.Device_TYPE_KEYBOARD
     TYPE_LAPTOP = LeapPython.Device_TYPE_LAPTOP
+    TYPE_KEYBOARD = LeapPython.Device_TYPE_KEYBOARD
 
     def __init__(self):
         this = LeapPython.new_Device()
@@ -1131,12 +1195,9 @@ class Device(Interface):
     __swig_getmethods__["is_streaming"] = LeapPython.Device_is_streaming_get
     if _newclass:
         is_streaming = _swig_property(LeapPython.Device_is_streaming_get)
-    __swig_getmethods__["is_smudged"] = LeapPython.Device_is_smudged_get
+    __swig_getmethods__["is_flipped"] = LeapPython.Device_is_flipped_get
     if _newclass:
-        is_smudged = _swig_property(LeapPython.Device_is_smudged_get)
-    __swig_getmethods__["is_lighting_bad"] = LeapPython.Device_is_lighting_bad_get
-    if _newclass:
-        is_lighting_bad = _swig_property(LeapPython.Device_is_lighting_bad_get)
+        is_flipped = _swig_property(LeapPython.Device_is_flipped_get)
     __swig_getmethods__["type"] = LeapPython.Device_type_get
     if _newclass:
         type = _swig_property(LeapPython.Device_type_get)
@@ -1154,56 +1215,6 @@ class Device(Interface):
 Device_swigregister = LeapPython.Device_swigregister
 Device_swigregister(Device)
 Device.invalid = LeapPython.cvar.Device_invalid
-
-class FailedDevice(Interface):
-    __swig_setmethods__ = {}
-    for _s in [Interface]:
-        __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
-    __setattr__ = lambda self, name, value: _swig_setattr(self, FailedDevice, name, value)
-    __swig_getmethods__ = {}
-    for _s in [Interface]:
-        __swig_getmethods__.update(getattr(_s, '__swig_getmethods__', {}))
-    __getattr__ = lambda self, name: _swig_getattr(self, FailedDevice, name)
-    __repr__ = _swig_repr
-    FAIL_UNKNOWN = LeapPython.FailedDevice_FAIL_UNKNOWN
-    FAIL_CALIBRATION = LeapPython.FailedDevice_FAIL_CALIBRATION
-    FAIL_FIRMWARE = LeapPython.FailedDevice_FAIL_FIRMWARE
-    FAIL_TRANSPORT = LeapPython.FailedDevice_FAIL_TRANSPORT
-    FAIL_CONTROL = LeapPython.FailedDevice_FAIL_CONTROL
-    FAIL_COUNT = LeapPython.FailedDevice_FAIL_COUNT
-
-    def __init__(self):
-        this = LeapPython.new_FailedDevice()
-        try:
-            self.this.append(this)
-        except:
-            self.this = this
-
-    def is_valid(self):
-        return LeapPython.FailedDevice_is_valid(self)
-    __swig_getmethods__["invalid"] = lambda x: LeapPython.FailedDevice_invalid
-    if _newclass:
-        invalid = staticmethod(LeapPython.FailedDevice_invalid)
-
-    def __eq__(self, arg2):
-        return LeapPython.FailedDevice___eq__(self, arg2)
-
-    def __ne__(self, arg2):
-        return LeapPython.FailedDevice___ne__(self, arg2)
-    __swig_getmethods__["pnp_id"] = LeapPython.FailedDevice_pnp_id_get
-    if _newclass:
-        pnp_id = _swig_property(LeapPython.FailedDevice_pnp_id_get)
-    __swig_getmethods__["failure"] = LeapPython.FailedDevice_failure_get
-    if _newclass:
-        failure = _swig_property(LeapPython.FailedDevice_failure_get)
-    __swig_destroy__ = LeapPython.delete_FailedDevice
-    __del__ = lambda self: None
-FailedDevice_swigregister = LeapPython.FailedDevice_swigregister
-FailedDevice_swigregister(FailedDevice)
-
-def FailedDevice_invalid():
-    return LeapPython.FailedDevice_invalid()
-FailedDevice_invalid = LeapPython.FailedDevice_invalid
 
 class Image(Interface):
     __swig_setmethods__ = {}
@@ -1229,7 +1240,6 @@ class Image(Interface):
     def distortion(self, dst):
         return LeapPython.Image_distortion(self, dst)
     INFRARED = LeapPython.Image_INFRARED
-    IBRG = LeapPython.Image_IBRG
 
     def rectify(self, uv):
         return LeapPython.Image_rectify(self, uv)
@@ -1311,6 +1321,78 @@ class Image(Interface):
 Image_swigregister = LeapPython.Image_swigregister
 Image_swigregister(Image)
 Image.invalid = LeapPython.cvar.Image_invalid
+
+class Mask(Interface):
+    __swig_setmethods__ = {}
+    for _s in [Interface]:
+        __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
+    __setattr__ = lambda self, name, value: _swig_setattr(self, Mask, name, value)
+    __swig_getmethods__ = {}
+    for _s in [Interface]:
+        __swig_getmethods__.update(getattr(_s, '__swig_getmethods__', {}))
+    __getattr__ = lambda self, name: _swig_getattr(self, Mask, name)
+    __repr__ = _swig_repr
+
+    def __init__(self):
+        this = LeapPython.new_Mask()
+        try:
+            self.this.append(this)
+        except:
+            self.this = this
+
+    def data(self, dst):
+        return LeapPython.Mask_data(self, dst)
+    __swig_getmethods__["invalid"] = lambda x: LeapPython.Mask_invalid
+    if _newclass:
+        invalid = staticmethod(LeapPython.Mask_invalid)
+
+    def __eq__(self, arg2):
+        return LeapPython.Mask___eq__(self, arg2)
+
+    def __ne__(self, arg2):
+        return LeapPython.Mask___ne__(self, arg2)
+
+    def __str__(self):
+        return LeapPython.Mask___str__(self)
+    __swig_getmethods__["sequence_id"] = LeapPython.Mask_sequence_id_get
+    if _newclass:
+        sequence_id = _swig_property(LeapPython.Mask_sequence_id_get)
+    __swig_getmethods__["id"] = LeapPython.Mask_id_get
+    if _newclass:
+        id = _swig_property(LeapPython.Mask_id_get)
+    __swig_getmethods__["width"] = LeapPython.Mask_width_get
+    if _newclass:
+        width = _swig_property(LeapPython.Mask_width_get)
+    __swig_getmethods__["height"] = LeapPython.Mask_height_get
+    if _newclass:
+        height = _swig_property(LeapPython.Mask_height_get)
+    __swig_getmethods__["offset_x"] = LeapPython.Mask_offset_x_get
+    if _newclass:
+        offset_x = _swig_property(LeapPython.Mask_offset_x_get)
+    __swig_getmethods__["offset_y"] = LeapPython.Mask_offset_y_get
+    if _newclass:
+        offset_y = _swig_property(LeapPython.Mask_offset_y_get)
+    __swig_getmethods__["is_valid"] = LeapPython.Mask_is_valid_get
+    if _newclass:
+        is_valid = _swig_property(LeapPython.Mask_is_valid_get)
+    def data(self):
+        ptr = byte_array(self.width * self.height)
+        LeapPython.Mask_data(self, ptr)
+        return ptr
+    __swig_getmethods__["data"] = data
+    if _newclass:data = _swig_property(data)
+
+    __swig_getmethods__["data_pointer"] = LeapPython.Mask_data_pointer_get
+    if _newclass:
+        data_pointer = _swig_property(LeapPython.Mask_data_pointer_get)
+    __swig_destroy__ = LeapPython.delete_Mask
+    __del__ = lambda self: None
+Mask_swigregister = LeapPython.Mask_swigregister
+Mask_swigregister(Mask)
+
+def Mask_invalid():
+    return LeapPython.Mask_invalid()
+Mask_invalid = LeapPython.Mask_invalid
 
 class PointableList(Interface):
     __swig_setmethods__ = {}
@@ -1557,6 +1639,49 @@ class GestureList(Interface):
 GestureList_swigregister = LeapPython.GestureList_swigregister
 GestureList_swigregister(GestureList)
 
+class ScreenList(Interface):
+    __swig_setmethods__ = {}
+    for _s in [Interface]:
+        __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
+    __setattr__ = lambda self, name, value: _swig_setattr(self, ScreenList, name, value)
+    __swig_getmethods__ = {}
+    for _s in [Interface]:
+        __swig_getmethods__.update(getattr(_s, '__swig_getmethods__', {}))
+    __getattr__ = lambda self, name: _swig_getattr(self, ScreenList, name)
+    __repr__ = _swig_repr
+
+    def __init__(self):
+        this = LeapPython.new_ScreenList()
+        try:
+            self.this.append(this)
+        except:
+            self.this = this
+
+    def __len__(self):
+        return LeapPython.ScreenList___len__(self)
+
+    def __getitem__(self, index):
+        return LeapPython.ScreenList___getitem__(self, index)
+
+    def closest_screen_hit(self, *args):
+        return LeapPython.ScreenList_closest_screen_hit(self, *args)
+
+    def closest_screen(self, position):
+        return LeapPython.ScreenList_closest_screen(self, position)
+    __swig_getmethods__["is_empty"] = LeapPython.ScreenList_is_empty_get
+    if _newclass:
+        is_empty = _swig_property(LeapPython.ScreenList_is_empty_get)
+    def __iter__(self):
+      _pos = 0
+      while _pos < len(self):
+        yield self[_pos]
+        _pos += 1
+
+    __swig_destroy__ = LeapPython.delete_ScreenList
+    __del__ = lambda self: None
+ScreenList_swigregister = LeapPython.ScreenList_swigregister
+ScreenList_swigregister(ScreenList)
+
 class DeviceList(Interface):
     __swig_setmethods__ = {}
     for _s in [Interface]:
@@ -1597,46 +1722,6 @@ class DeviceList(Interface):
 DeviceList_swigregister = LeapPython.DeviceList_swigregister
 DeviceList_swigregister(DeviceList)
 
-class FailedDeviceList(Interface):
-    __swig_setmethods__ = {}
-    for _s in [Interface]:
-        __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
-    __setattr__ = lambda self, name, value: _swig_setattr(self, FailedDeviceList, name, value)
-    __swig_getmethods__ = {}
-    for _s in [Interface]:
-        __swig_getmethods__.update(getattr(_s, '__swig_getmethods__', {}))
-    __getattr__ = lambda self, name: _swig_getattr(self, FailedDeviceList, name)
-    __repr__ = _swig_repr
-
-    def __init__(self):
-        this = LeapPython.new_FailedDeviceList()
-        try:
-            self.this.append(this)
-        except:
-            self.this = this
-
-    def __len__(self):
-        return LeapPython.FailedDeviceList___len__(self)
-
-    def __getitem__(self, index):
-        return LeapPython.FailedDeviceList___getitem__(self, index)
-
-    def append(self, other):
-        return LeapPython.FailedDeviceList_append(self, other)
-    __swig_getmethods__["is_empty"] = LeapPython.FailedDeviceList_is_empty_get
-    if _newclass:
-        is_empty = _swig_property(LeapPython.FailedDeviceList_is_empty_get)
-    def __iter__(self):
-      _pos = 0
-      while _pos < len(self):
-        yield self[_pos]
-        _pos += 1
-
-    __swig_destroy__ = LeapPython.delete_FailedDeviceList
-    __del__ = lambda self: None
-FailedDeviceList_swigregister = LeapPython.FailedDeviceList_swigregister
-FailedDeviceList_swigregister(FailedDeviceList)
-
 class ImageList(Interface):
     __swig_setmethods__ = {}
     for _s in [Interface]:
@@ -1676,6 +1761,108 @@ class ImageList(Interface):
     __del__ = lambda self: None
 ImageList_swigregister = LeapPython.ImageList_swigregister
 ImageList_swigregister(ImageList)
+
+class TrackedQuad(Interface):
+    __swig_setmethods__ = {}
+    for _s in [Interface]:
+        __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
+    __setattr__ = lambda self, name, value: _swig_setattr(self, TrackedQuad, name, value)
+    __swig_getmethods__ = {}
+    for _s in [Interface]:
+        __swig_getmethods__.update(getattr(_s, '__swig_getmethods__', {}))
+    __getattr__ = lambda self, name: _swig_getattr(self, TrackedQuad, name)
+    __repr__ = _swig_repr
+
+    def __init__(self):
+        this = LeapPython.new_TrackedQuad()
+        try:
+            self.this.append(this)
+        except:
+            self.this = this
+
+    def __eq__(self, arg2):
+        return LeapPython.TrackedQuad___eq__(self, arg2)
+
+    def __ne__(self, arg2):
+        return LeapPython.TrackedQuad___ne__(self, arg2)
+
+    def __str__(self):
+        return LeapPython.TrackedQuad___str__(self)
+    __swig_getmethods__["width"] = LeapPython.TrackedQuad_width_get
+    if _newclass:
+        width = _swig_property(LeapPython.TrackedQuad_width_get)
+    __swig_getmethods__["height"] = LeapPython.TrackedQuad_height_get
+    if _newclass:
+        height = _swig_property(LeapPython.TrackedQuad_height_get)
+    __swig_getmethods__["resolution_x"] = LeapPython.TrackedQuad_resolution_x_get
+    if _newclass:
+        resolution_x = _swig_property(LeapPython.TrackedQuad_resolution_x_get)
+    __swig_getmethods__["resolution_y"] = LeapPython.TrackedQuad_resolution_y_get
+    if _newclass:
+        resolution_y = _swig_property(LeapPython.TrackedQuad_resolution_y_get)
+    __swig_getmethods__["visible"] = LeapPython.TrackedQuad_visible_get
+    if _newclass:
+        visible = _swig_property(LeapPython.TrackedQuad_visible_get)
+    __swig_getmethods__["orientation"] = LeapPython.TrackedQuad_orientation_get
+    if _newclass:
+        orientation = _swig_property(LeapPython.TrackedQuad_orientation_get)
+    __swig_getmethods__["position"] = LeapPython.TrackedQuad_position_get
+    if _newclass:
+        position = _swig_property(LeapPython.TrackedQuad_position_get)
+    __swig_getmethods__["masks"] = LeapPython.TrackedQuad_masks_get
+    if _newclass:
+        masks = _swig_property(LeapPython.TrackedQuad_masks_get)
+    __swig_getmethods__["images"] = LeapPython.TrackedQuad_images_get
+    if _newclass:
+        images = _swig_property(LeapPython.TrackedQuad_images_get)
+    __swig_getmethods__["is_valid"] = LeapPython.TrackedQuad_is_valid_get
+    if _newclass:
+        is_valid = _swig_property(LeapPython.TrackedQuad_is_valid_get)
+    __swig_destroy__ = LeapPython.delete_TrackedQuad
+    __del__ = lambda self: None
+TrackedQuad_swigregister = LeapPython.TrackedQuad_swigregister
+TrackedQuad_swigregister(TrackedQuad)
+TrackedQuad.invalid = LeapPython.cvar.TrackedQuad_invalid
+
+class MaskList(Interface):
+    __swig_setmethods__ = {}
+    for _s in [Interface]:
+        __swig_setmethods__.update(getattr(_s, '__swig_setmethods__', {}))
+    __setattr__ = lambda self, name, value: _swig_setattr(self, MaskList, name, value)
+    __swig_getmethods__ = {}
+    for _s in [Interface]:
+        __swig_getmethods__.update(getattr(_s, '__swig_getmethods__', {}))
+    __getattr__ = lambda self, name: _swig_getattr(self, MaskList, name)
+    __repr__ = _swig_repr
+
+    def __init__(self):
+        this = LeapPython.new_MaskList()
+        try:
+            self.this.append(this)
+        except:
+            self.this = this
+
+    def __len__(self):
+        return LeapPython.MaskList___len__(self)
+
+    def __getitem__(self, index):
+        return LeapPython.MaskList___getitem__(self, index)
+
+    def append(self, other):
+        return LeapPython.MaskList_append(self, other)
+    __swig_getmethods__["is_empty"] = LeapPython.MaskList_is_empty_get
+    if _newclass:
+        is_empty = _swig_property(LeapPython.MaskList_is_empty_get)
+    def __iter__(self):
+      _pos = 0
+      while _pos < len(self):
+        yield self[_pos]
+        _pos += 1
+
+    __swig_destroy__ = LeapPython.delete_MaskList
+    __del__ = lambda self: None
+MaskList_swigregister = LeapPython.MaskList_swigregister
+MaskList_swigregister(MaskList)
 
 class InteractionBox(Interface):
     __swig_setmethods__ = {}
@@ -1828,9 +2015,6 @@ class Frame(Interface):
     __swig_getmethods__["images"] = LeapPython.Frame_images_get
     if _newclass:
         images = _swig_property(LeapPython.Frame_images_get)
-    __swig_getmethods__["raw_images"] = LeapPython.Frame_raw_images_get
-    if _newclass:
-        raw_images = _swig_property(LeapPython.Frame_raw_images_get)
     __swig_getmethods__["is_valid"] = LeapPython.Frame_is_valid_get
     if _newclass:
         is_valid = _swig_property(LeapPython.Frame_is_valid_get)
@@ -1840,6 +2024,9 @@ class Frame(Interface):
     __swig_getmethods__["serialize_length"] = LeapPython.Frame_serialize_length_get
     if _newclass:
         serialize_length = _swig_property(LeapPython.Frame_serialize_length_get)
+    __swig_getmethods__["tracked_quad"] = LeapPython.Frame_tracked_quad_get
+    if _newclass:
+        tracked_quad = _swig_property(LeapPython.Frame_tracked_quad_get)
     def serialize(self):
         length = self.serialize_length
         str = byte_array(length)
@@ -1981,8 +2168,6 @@ class Controller(Interface):
     POLICY_BACKGROUND_FRAMES = LeapPython.Controller_POLICY_BACKGROUND_FRAMES
     POLICY_IMAGES = LeapPython.Controller_POLICY_IMAGES
     POLICY_OPTIMIZE_HMD = LeapPython.Controller_POLICY_OPTIMIZE_HMD
-    POLICY_ALLOW_PAUSE_RESUME = LeapPython.Controller_POLICY_ALLOW_PAUSE_RESUME
-    POLICY_RAW_IMAGES = LeapPython.Controller_POLICY_RAW_IMAGES
 
     def set_policy_flags(self, flags):
         return LeapPython.Controller_set_policy_flags(self, flags)
@@ -2005,20 +2190,11 @@ class Controller(Interface):
     def frame(self, history=0):
         return LeapPython.Controller_frame(self, history)
 
-    def failed_devices(self):
-        return LeapPython.Controller_failed_devices(self)
-
     def enable_gesture(self, type, enable=True):
         return LeapPython.Controller_enable_gesture(self, type, enable)
 
     def is_gesture_enabled(self, type):
         return LeapPython.Controller_is_gesture_enabled(self, type)
-
-    def set_paused(self, pause):
-        return LeapPython.Controller_set_paused(self, pause)
-
-    def is_paused(self):
-        return LeapPython.Controller_is_paused(self)
 
     def now(self):
         return LeapPython.Controller_now(self)
@@ -2037,22 +2213,21 @@ class Controller(Interface):
     __swig_getmethods__["images"] = LeapPython.Controller_images_get
     if _newclass:
         images = _swig_property(LeapPython.Controller_images_get)
-    __swig_getmethods__["raw_images"] = LeapPython.Controller_raw_images_get
+    __swig_getmethods__["located_screens"] = LeapPython.Controller_located_screens_get
     if _newclass:
-        raw_images = _swig_property(LeapPython.Controller_raw_images_get)
+        located_screens = _swig_property(LeapPython.Controller_located_screens_get)
     __swig_getmethods__["devices"] = LeapPython.Controller_devices_get
     if _newclass:
         devices = _swig_property(LeapPython.Controller_devices_get)
+    __swig_getmethods__["tracked_quad"] = LeapPython.Controller_tracked_quad_get
+    if _newclass:
+        tracked_quad = _swig_property(LeapPython.Controller_tracked_quad_get)
     __swig_getmethods__["bug_report"] = LeapPython.Controller_bug_report_get
     if _newclass:
         bug_report = _swig_property(LeapPython.Controller_bug_report_get)
 Controller_swigregister = LeapPython.Controller_swigregister
 Controller_swigregister(Controller)
 
-MESSAGE_UNKNOWN = LeapPython.MESSAGE_UNKNOWN
-MESSAGE_CRITICAL = LeapPython.MESSAGE_CRITICAL
-MESSAGE_WARNING = LeapPython.MESSAGE_WARNING
-MESSAGE_INFORMATION = LeapPython.MESSAGE_INFORMATION
 class Listener(_object):
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, Listener, name, value)
@@ -2105,15 +2280,6 @@ class Listener(_object):
 
     def on_images(self, arg0):
         return LeapPython.Listener_on_images(self, arg0)
-
-    def on_service_change(self, arg0):
-        return LeapPython.Listener_on_service_change(self, arg0)
-
-    def on_device_failure(self, arg0):
-        return LeapPython.Listener_on_device_failure(self, arg0)
-
-    def on_log_message(self, arg0, severity, timestamp, msg):
-        return LeapPython.Listener_on_log_message(self, arg0, severity, timestamp, msg)
     def __disown__(self):
         self.this.disown()
         LeapPython.disown_Listener(self)
