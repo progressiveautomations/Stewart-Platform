@@ -86,11 +86,15 @@ void loop()
  */
 void readSerial()
 {
-    // Parse ints from serial; return immediately if input is invalid
+    // Parse ints from serial
     for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
         input[motor] = SerialUSB.parseInt();
+    }
 
+    // Check that inputs are valid
+    for (motor = 0; motor < NUM_MOTORS; ++motor)
+    {
         if (input[motor] < MIN_POS || input[motor] > MAX_POS)
         {
             return;
