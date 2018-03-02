@@ -10,7 +10,7 @@ MotorDirection dir[NUM_MOTORS];  // current direction for each actuator (EXTEND 
 // Position variables
 int16_t pos[NUM_MOTORS];  // current position (measured by analog read) of each actuator
 int16_t input[NUM_MOTORS];  // intermediate input retrieved from the serial buffer
-uint16_t desired_pos[NUM_MOTORS]; // desired (user-inputted and validated) position of each actuator
+uint16_t desired_pos[NUM_MOTORS];  // desired (user-inputted and validated) position of each actuator
 
 // Feedback variables
 int16_t pos_diff;  // difference between current and desired position
@@ -20,7 +20,7 @@ uint8_t previous_inst[NUM_MOTORS];  // starting/past sample instance for each ac
 uint8_t current_inst[NUM_MOTORS];  // new/incrementing sample instance for each actuator; for derivative gain
 float p_corr;  // proportional correction for PID
 float i_corr;  // integral correction for PID
-float d_corr; // differential correction for PID
+float d_corr;  // differential correction for PID
 float corr;  // final feedback PWM value from PID correction
 
 // Time variables (for printing)
@@ -154,6 +154,7 @@ void normalOp()
     }
 
     // Print actuator information at a given interval
+    // Comment out when not debugging to maximize loop speed
     current_time = millis();
     if (current_time - previous_time > PRINT_INTERVAL)
     {

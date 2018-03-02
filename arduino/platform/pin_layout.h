@@ -26,6 +26,6 @@
 #define POT_PIN_5 A10
 #define POT_PIN_6 A11
 
-// L9958 Enable for all motors (grouped as such due to different H-bridge controllers)
+// Enable for all motors (grouped as such due to different H-bridge controllers)
 #define ENABLE_MOTORS_1 24
 #define ENABLE_MOTORS_2 25

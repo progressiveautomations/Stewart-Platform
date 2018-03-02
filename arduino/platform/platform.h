@@ -32,16 +32,16 @@ typedef enum _MotorDirection  // to clarify the direction in which actuators mov
 
 // PID feedback parameters
 // TODO: to be fine-tuned
-#define P_COEFF 0.1
+#define P_COEFF 20
 #define I_COEFF 0.1
-#define D_COEFF 0.1
+#define D_COEFF 0
 
 // Serial configuration parameters
 #define BAUD_RATE 115200
 
 // Serial input parameters
 #define INPUT_TRIGGER 10  // 6 numbers + 5 spaces
-#define NUM_READINGS 100 // number of analog readings to average to acquire position
+#define NUM_READINGS 100  // number of analog readings to average to acquire position
 
 // Serial output parameters
 #define PRINT_INTERVAL 1000  // minimum time (ms) between printing serial info
