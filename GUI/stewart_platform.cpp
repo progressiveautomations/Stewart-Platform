@@ -85,7 +85,7 @@ void StewartPlatform::on_actionExit_triggered()
 
 void StewartPlatform::Log(const QString &entry)
 {
-    ui->log->insertPlainText(entry + "\n");
+    ui->log->appendPlainText(entry + "\n");
 }
 
 void StewartPlatform::SendActuatorPositions(QVector<int> actuator_pos)
@@ -102,7 +102,7 @@ void StewartPlatform::SendActuatorPositions(QVector<int> actuator_pos)
 void StewartPlatform::readSerialData()
 {
     Q_ASSERT(m_serial->isOpen());
-    ui->log->insertPlainText(m_serial->readAll());
+    ui->log->appendPlainText(m_serial->readAll());
 }
 
 void StewartPlatform::writeSerialData(const char* data)
