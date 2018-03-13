@@ -65,7 +65,10 @@ private:
     Ui::StewartPlatform *ui;
     SerialSettingsDialog *m_settings = nullptr;
     QSerialPort* m_serial = nullptr;
-    QMap<QSpinBox*, QSlider*> manual_adjust;
+    QVector<QSpinBox*> manual_fields;
+    QVector<QSlider*> manual_sliders;
+    QSpinBox* field;
+    QSlider* slider;
 
 private slots:
     void on_actionExit_triggered();

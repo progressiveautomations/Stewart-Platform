@@ -11,29 +11,28 @@ StewartPlatform::StewartPlatform(QWidget *parent) :
 
     // Setup map of manual control elements
     actuator_positions = {0, 0, 0, 0, 0, 0};
-    manual_adjust = {{ui->field_1, ui->slider_1}, {ui->field_2, ui->slider_2}, {ui->field_3, ui->slider_3}, {ui->field_4, ui->slider_4}, {ui->field_5, ui->slider_5}, {ui->field_6, ui->slider_6}};
+    manual_fields = {ui->field_1, ui->field_2, ui->field_3, ui->field_4, ui->field_5, ui->field_6};
+    manual_sliders = {ui->slider_1, ui->slider_2, ui->slider_3, ui->slider_4, ui->slider_5, ui->slider_6};
 
-    // Index
-    int i = 0;
-    QMapIterator<QSpinBox*, QSlider*> iter(manual_adjust);
-    // Setup signals for each pair
-    while(iter.hasNext())
+    // Setup signals for each field/slider pair
+    for (int i = 0; i < NUM_ACTUATORS; ++i)
     {
-        iter.next();
+        field = manual_fields[i];
+        slider = manual_sliders[i];
+
         // Set max and min for each actuator
-        iter.key()->setMaximum(MAX_ACTUATOR_VALUE);
-        iter.value()->setMaximum(MAX_ACTUATOR_VALUE);
-        iter.key()->setMinimum(MIN_ACTUATOR_VALUE);
-        iter.value()->setMinimum(MIN_ACTUATOR_VALUE);
+        field->setMinimum(MIN_ACTUATOR_VALUE);
+        field->setMaximum(MAX_ACTUATOR_VALUE);
+        slider->setMinimum(MIN_ACTUATOR_VALUE);
+        slider->setMaximum(MAX_ACTUATOR_VALUE);
 
         /* Signals */
         // Slider updates spinbox and spinbox updates sliders
-        connect(iter.key(), QOverload<int>::of(&QSpinBox::valueChanged), iter.value(), &QSlider::setValue);
-        connect(iter.value(), &QSlider::valueChanged, iter.key(), &QSpinBox::setValue);
+        connect(field, QOverload<int>::of(&QSpinBox::valueChanged), slider, &QSlider::setValue);
+        connect(slider, &QSlider::valueChanged, field, &QSpinBox::setValue);
 
         // Slider updates actuator_positions (lambda selects appropriate index)
-        connect(iter.value(), &QSlider::valueChanged, this, [=](int j){this->actuator_positions[i] = j;});
-        ++i;
+        connect(slider, &QSlider::valueChanged, this, [=](int j){this->actuator_positions[i] = j;});
     }
 
     // Initialize status labels
