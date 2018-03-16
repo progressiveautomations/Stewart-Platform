@@ -62,8 +62,6 @@ void setup()
     digitalWrite(ENABLE_MOTORS_2, LOW);
 
     // For safety, set initial actuator settings and speed to 0
-    moveAll(RETRACT);
-    delay(RESET_DELAY);
     for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
         total_diff[motor] = 0;
@@ -74,6 +72,9 @@ void setup()
     // Initialize serial communication
     SerialUSB.begin(BAUD_RATE);
 
+    // Run calibration
+    calibrate();
+    
     // Initialize the current print interval
     #if ENABLE_PRINT
     {
@@ -88,65 +89,30 @@ void setup()
  */
 void loop()
 {
-    #if ENABLE_CALIBRATION  // read and output the average extremum values for each actuator
+    // Read current actuator positions, map them based on an actuator-based scaling from calibration
+    for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
-        for (motor = 0; motor < NUM_MOTORS; ++motor)
-        {
-            // Start with extension
-            digitalWrite(DIR_PINS[motor], EXTEND);
-            analogWrite(PWM_PINS[motor], MAX_PWM);
-            delay(RESET_DELAY);
-
-            // Stop the extension, get an averaged analog reading
-            analogWrite(PWM_PINS[motor], 0);
-            max_readings[motor] = getAverageReading(motor);
-
-            // Finish with retraction
-            digitalWrite(DIR_PINS[motor], RETRACT);
-            analogWrite(PWM_PINS[motor], MAX_PWM);
-            delay(RESET_DELAY);
-
-            // Stop the retraction, get an averaged analog reading
-            analogWrite(PWM_PINS[motor], 0);
-            min_readings[motor] = getAverageReading(motor);
-
-            // Print results ("[min] [max]" - one actuator per line)
-            SerialUSB.print(min_readings[motor]);
-            SerialUSB.print(" ");
-            SerialUSB.print(max_readings[motor]);
-            SerialUSB.print("\n");
-        }
-
-        SerialUSB.print("\n");  // separate output between different calibration loops
+        pos[motor] = map(getAverageReading(motor), ZERO_POS[motor], END_POS[motor], MIN_POS, MAX_POS);
     }
-    #else  // run the regular movement routine
+
+    // Parse new serial input if enough is in the buffer (also sets desired position if input is valid)
+    if (SerialUSB.available() > INPUT_TRIGGER)
     {
-        // Read current actuator positions, map them based on an actuator-based scaling from calibration
-        for (motor = 0; motor < NUM_MOTORS; ++motor)
-        {
-            pos[motor] = map(getAverageReading(motor), ZERO_POS[motor], END_POS[motor], MIN_POS, MAX_POS);
-        }
-
-        // Parse new serial input if enough is in the buffer (also sets desired position if input is valid)
-        if (SerialUSB.available() > INPUT_TRIGGER)
-        {
-            readSerial();
-        }
-
-        // Print actuator information at a given interval
-        #if ENABLE_PRINT
-        {
-            printOutput();
-        }
-        #endif // ENABLE_PRINT
-
-        // For each actuator, set movement parameters (direction, PWM) and execute motion
-        for (motor = 0; motor < NUM_MOTORS; ++motor)
-        {
-            move(motor);
-        }
+        readSerial();
     }
-    #endif // ENABLE_CALIBRATION
+
+    // Print actuator information at a given interval
+    #if ENABLE_PRINT
+    {
+        printOutput();
+    }
+    #endif // ENABLE_PRINT
+
+    // For each actuator, set movement parameters (direction, PWM) and execute motion
+    for (motor = 0; motor < NUM_MOTORS; ++motor)
+    {
+        move(motor);
+    }
 }
 
 
@@ -318,3 +284,57 @@ inline void move(uint8_t motor)
     previous_diff[motor] = pos_diff;
 }
 
+
+/**
+ * Calibration routine run on startup.
+ * Extends all actuators, reads extended values, then retracts all, and reads their retracted values.
+ */ 
+inline void calibrate()
+{
+    for (motor = 0; motor < NUM_MOTORS; ++motor)
+    {
+        // Start with extension
+        digitalWrite(DIR_PINS[motor], EXTEND);
+        analogWrite(PWM_PINS[motor], MAX_PWM);
+    }
+    delay(RESET_DELAY);
+
+    for (motor = 0; motor < NUM_MOTORS; ++motor)
+    {
+        // Stop the extension, get an averaged analog reading
+        analogWrite(PWM_PINS[motor], 0);
+        END_POS[motor] = getAverageReading(motor);
+    }
+    for (motor = 0; motor < NUM_MOTORS; ++motor)
+    {
+        // Finish with retraction
+        digitalWrite(DIR_PINS[motor], RETRACT);
+        analogWrite(PWM_PINS[motor], MAX_PWM);
+    }
+    delay(RESET_DELAY);
+    
+    for (motor = 0; motor < NUM_MOTORS; ++motor)
+    {
+        // Stop the retraction, get an averaged analog reading
+        analogWrite(PWM_PINS[motor], 0);
+        ZERO_POS[motor] = getAverageReading(motor);
+    }
+
+    // Print mins
+    SerialUSB.print("Calibrated mins: ");
+    for (motor = 0; motor < NUM_MOTORS; ++motor)
+    {
+        SerialUSB.print(END_POS[motor]);
+        SerialUSB.print(" ");
+    }
+    SerialUSB.print("\n");
+
+    // Print maxs
+    SerialUSB.print("Calibrated maxs: ");
+    for (motor = 0; motor < NUM_MOTORS; ++motor)
+    {
+        SerialUSB.print(ZERO_POS[motor]);
+        SerialUSB.print(" ");
+    }
+    SerialUSB.print("\n");
+}

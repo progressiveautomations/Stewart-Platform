@@ -17,9 +17,8 @@
 #define MAX_PWM 255
 
 // Platform calibration settings (average analog values at extrema for each actuator)
-// NOTE: these are manually changed after retrieving results of calibration
-const int16_t ZERO_POS[NUM_MOTORS]  = { 188, 178, 175, 179, 189, 184 };
-const int16_t END_POS[NUM_MOTORS]   = { 847, 830, 839, 841, 830, 839 };
+int16_t ZERO_POS[NUM_MOTORS]  = { 188, 178, 175, 179, 189, 184 };
+int16_t END_POS[NUM_MOTORS]   = { 847, 830, 839, 841, 830, 839 };
 
 // Pin group arrays; each value corresponding to the actuator (see "pin_layout.h" for specific ins)
 const uint8_t DIR_PINS[NUM_MOTORS] = { DIR_PIN_1, DIR_PIN_2, DIR_PIN_3, DIR_PIN_4, DIR_PIN_5, DIR_PIN_6 };
