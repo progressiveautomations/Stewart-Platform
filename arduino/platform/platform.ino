@@ -28,10 +28,6 @@ float corr;                         // final feedback PWM value from PID correct
 unsigned long current_time;         // current time (in millis); used to measure difference from previous_time
 unsigned long previous_time;        // last recorded time (in millis); measured from execution start or last print
 
-// Calibration variables
-int16_t max_readings[NUM_MOTORS];   // average reading for each actuator at full extension
-int16_t min_readings[NUM_MOTORS];   // average reading for each actuator at full retraction
-
 // Iterator/sum variables
 uint8_t motor;                      // used to iterate through actuators by their indexing (0 to NUM_MOTORS - 1)
 uint8_t reading;                    // used to iterate through analog reads (0 to NUM_READINGS - 1)
@@ -74,7 +70,7 @@ void setup()
 
     // Run calibration
     calibrate();
-    
+
     // Initialize the current print interval
     #if ENABLE_PRINT
     {
@@ -89,7 +85,7 @@ void setup()
  */
 void loop()
 {
-    // Read current actuator positions, map them based on an actuator-based scaling from calibration
+    // Read current actuator positions, map them based on actuator-based scaling from calibration
     for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
         pos[motor] = map(getAverageReading(motor), ZERO_POS[motor], END_POS[motor], MIN_POS, MAX_POS);
@@ -180,11 +176,19 @@ inline void printOutput()
     current_time = millis();
     if (current_time - previous_time > PRINT_INTERVAL)
     {
+        // Print instance header
+        #if ENABLE_PRINT_HEADERS
+        {
+            SerialUSB.print("<COM>\n");
+        }
+        #endif // ENABLE_PRINT_HEADERS
+
+        // Print desired position
         #if PRINT_DESIRED_POS
         {
             #if ENABLE_PRINT_HEADERS
             {
-                SerialUSB.print("Desired Positions:\n");
+                SerialUSB.print("      DESIRED POS: ");
             }
             #endif // ENABLE_PRINT_HEADERS
 
@@ -198,11 +202,12 @@ inline void printOutput()
         }
         #endif // PRINT_DESIRED_POS
 
+        // Print current position
         #if PRINT_CURRENT_POS
         {
             #if ENABLE_PRINT_HEADERS
             {
-                SerialUSB.print("Current Positions:\n");
+                SerialUSB.print("      CURRENT POS: ");
             }
             #endif // ENABLE_PRINT_HEADERS
 
@@ -216,11 +221,12 @@ inline void printOutput()
         }
         #endif // PRINT_CURRENT_POS
 
+        // Print PWM values
         #if PRINT_PWM
         {
             #if ENABLE_PRINT_HEADERS
             {
-                SerialUSB.print("PWM Values:\n");
+                SerialUSB.print("      PWM        : ");  // align values wih other entries
             }
             #endif // ENABLE_PRINT_HEADERS
 
@@ -233,6 +239,13 @@ inline void printOutput()
             SerialUSB.print("\n");
         }
         #endif // PRINT_PWM
+
+        // Print CR to end message block
+        #if ENABLE_PRINT_HEADERS
+        {
+            SerialUSB.print("\r");
+        }
+        #endif // ENABLE_PRINT_HEADERS
 
         previous_time = current_time;
     }
@@ -249,11 +262,6 @@ inline void move(uint8_t motor)
     pos_diff = pos[motor] - desired_pos[motor];
 
     // Compute error-dependent PID variables
-    if (previous_diff[motor] != pos_diff)
-    {
-        previous_inst[motor] = current_inst[motor];
-        current_inst[motor] = 1;
-    }
     if (abs(pos_diff) <= POS_THRESHOLD)
     {
         prop_diff = 0;
@@ -263,6 +271,11 @@ inline void move(uint8_t motor)
     {
         prop_diff = pos_diff;
         total_diff[motor] += pos_diff;
+    }
+    if (previous_diff[motor] != pos_diff)
+    {
+        previous_inst[motor] = current_inst[motor];
+        current_inst[motor] = 1;
     }
 
     // Compute PID gain values
@@ -288,9 +301,10 @@ inline void move(uint8_t motor)
 /**
  * Calibration routine run on startup.
  * Extends all actuators, reads extended values, then retracts all, and reads their retracted values.
- */ 
+ */
 inline void calibrate()
 {
+    // Extend all actuators
     for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
         // Start with extension
@@ -299,42 +313,53 @@ inline void calibrate()
     }
     delay(RESET_DELAY);
 
+    // Stop the extension, get averaged analog readings
     for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
-        // Stop the extension, get an averaged analog reading
         analogWrite(PWM_PINS[motor], 0);
         END_POS[motor] = getAverageReading(motor);
     }
+
+    // Retract all actuators
     for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
-        // Finish with retraction
         digitalWrite(DIR_PINS[motor], RETRACT);
         analogWrite(PWM_PINS[motor], MAX_PWM);
     }
     delay(RESET_DELAY);
-    
+
+    // Stop the retraction, get averaged analog readings
     for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
-        // Stop the retraction, get an averaged analog reading
         analogWrite(PWM_PINS[motor], 0);
         ZERO_POS[motor] = getAverageReading(motor);
     }
 
-    // Print mins
-    SerialUSB.print("Calibrated mins: ");
-    for (motor = 0; motor < NUM_MOTORS; ++motor)
+    // Print new max/min values
+    #if ENABLE_PRINT
     {
-        SerialUSB.print(END_POS[motor]);
-        SerialUSB.print(" ");
-    }
-    SerialUSB.print("\n");
+        SerialUSB.print("<COM> Finished calibration:\n");
 
-    // Print maxs
-    SerialUSB.print("Calibrated maxs: ");
-    for (motor = 0; motor < NUM_MOTORS; ++motor)
-    {
-        SerialUSB.print(ZERO_POS[motor]);
-        SerialUSB.print(" ");
+        // Print minimum positions
+        SerialUSB.print("      MIN POS: ");
+        for (motor = 0; motor < NUM_MOTORS; ++motor)
+        {
+            SerialUSB.print(ZERO_POS[motor]);
+            SerialUSB.print(" ");
+        }
+        SerialUSB.print("\n");
+
+        // Print maximum positions
+        SerialUSB.print("      MAX POS: ");
+        for (motor = 0; motor < NUM_MOTORS; ++motor)
+        {
+            SerialUSB.print(END_POS[motor]);
+            SerialUSB.print(" ");
+        }
+        SerialUSB.print("\n");
+
+        // Print CR to end message block
+        SerialUSB.print("\r");
     }
-    SerialUSB.print("\n");
+    #endif // ENABLE_PRINT
 }

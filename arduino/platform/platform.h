@@ -4,9 +4,6 @@
 
 #include "pin_layout.h"
 
-// Specify platform routine
-#define ENABLE_CALIBRATION 0  // set to 1 to run a calibration routine rather than normal operation
-
 // Platform parameters
 #define NUM_MOTORS 6
 
@@ -47,10 +44,10 @@ typedef enum _MotorDirection  // to clarify the direction in which actuators mov
 #define NUM_READINGS  100  // number of analog readings to average to acquire position
 
 // Serial print/output parameters
-// NOTE: feedback measurement settings: PRINT_INTERVAL = 10, ENABLE_PRINT_HEADERS = 0, only current_pos
-#define PRINT_INTERVAL          10                 // minimum time (ms) between printing serial info
-#define ENABLE_PRINT            0                  // flag to enable printing variables (for debugging)
-#define ENABLE_PRINT_HEADERS    0                  // flag to enable variable headers (when not running analysis)
-#define PRINT_DESIRED_POS       ENABLE_PRINT && 0  // print desired position values when printing serial info
+// NOTE: feedback measurement settings: PRINT_INTERVAL = 10, ENABLE_PRINT_HEADERS = 0, only PRINT_CURRENT_POS
+#define PRINT_INTERVAL          1000               // minimum time (ms) between printing serial info
+#define ENABLE_PRINT            1                  // flag to enable printing variables (for debugging)
+#define ENABLE_PRINT_HEADERS    1                  // flag to enable variable headers (when not running analysis)
+#define PRINT_DESIRED_POS       ENABLE_PRINT && 1  // print desired position values when printing serial info
 #define PRINT_CURRENT_POS       ENABLE_PRINT && 1  // print current position values when printing serial info
-#define PRINT_PWM               ENABLE_PRINT && 0  // print PWM values when printing serial info
+#define PRINT_PWM               ENABLE_PRINT && 1  // print PWM values when printing serial info
