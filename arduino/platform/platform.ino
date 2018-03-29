@@ -24,6 +24,11 @@ float i_corr;                       // integral correction for PID
 float d_corr;                       // differential correction for PID
 float corr;                         // final feedback PWM value from PID correction
 
+// Calibration variables
+int16_t end_readings[NUM_MOTORS];
+int16_t zero_readings[NUM_MOTORS];
+bool calibration_valid;
+
 // Time variables (for printing)
 unsigned long current_time;         // current time (in millis); used to measure difference from previous_time
 unsigned long previous_time;        // last recorded time (in millis); measured from execution start or last print
@@ -69,6 +74,7 @@ void setup()
     SerialUSB.begin(BAUD_RATE);
 
     // Run calibration
+    calibration_valid = true;
     calibrate();
 
     // Initialize the current print interval
@@ -262,7 +268,7 @@ inline void move(uint8_t motor)
     pos_diff = pos[motor] - desired_pos[motor];
 
     // Compute error-dependent PID variables
-    if (abs(pos_diff) <= POS_THRESHOLD)
+    if (abs(pos_diff) <= POS_THRESHOLD[motor])
     {
         prop_diff = 0;
         total_diff[motor] = 0;
@@ -279,9 +285,9 @@ inline void move(uint8_t motor)
     }
 
     // Compute PID gain values
-    p_corr = P_COEFF * prop_diff;
-    i_corr = I_COEFF * total_diff[motor];
-    d_corr = D_COEFF * ((float) pos_diff - previous_diff[motor]) / (current_inst[motor] + previous_inst[motor]);
+    p_corr = P_COEFF[motor] * prop_diff;
+    i_corr = I_COEFF[motor] * total_diff[motor];
+    d_corr = D_COEFF[motor] * ((float) pos_diff - previous_diff[motor]) / (current_inst[motor] + previous_inst[motor]);
 
     // Compute the correction value and set the direction and PWM for the actuator
     corr = p_corr + i_corr + d_corr;
@@ -317,9 +323,15 @@ inline void calibrate()
     for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
         analogWrite(PWM_PINS[motor], 0);
-        END_POS[motor] = getAverageReading(motor);
-    }
+        end_readings[motor] = getAverageReading(motor);
 
+        // Check if the motors are powered (reading is valid)
+        calibration_valid = (abs(end_readings[motor] - END_POS[motor]) < OFF_THRESHOLD);
+        if (!calibration_valid)
+        {
+            break;
+        }
+    }
     // Retract all actuators
     for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
@@ -329,37 +341,67 @@ inline void calibrate()
     delay(RESET_DELAY);
 
     // Stop the retraction, get averaged analog readings
-    for (motor = 0; motor < NUM_MOTORS; ++motor)
+    if (calibration_valid)
     {
-        analogWrite(PWM_PINS[motor], 0);
-        ZERO_POS[motor] = getAverageReading(motor);
+        for (motor = 0; motor < NUM_MOTORS; ++motor)
+        {
+            analogWrite(PWM_PINS[motor], 0);
+            zero_readings[motor] = getAverageReading(motor);
+
+            // Check if the motors are powered (reading is valid)
+            calibration_valid = (abs(zero_readings[motor] - ZERO_POS[motor]) < OFF_THRESHOLD);
+            if (!calibration_valid)
+            {
+                break;
+            }
+        }
     }
 
-    // Print new max/min values
+    // Set the new calibration values if found to be valid
+    if (calibration_valid)
+    {
+        for (motor = 0; motor < NUM_MOTORS; ++motor)
+        {
+            END_POS[motor] = end_readings[motor];
+            ZERO_POS[motor] = zero_readings[motor];
+        }
+    }
+
+    // Print the calibration result (new max/min values, or a warning)
     #if ENABLE_PRINT
     {
-        SerialUSB.print("<COM> Finished calibration:\n");
-
-        // Print minimum positions
-        SerialUSB.print("      MIN POS: ");
-        for (motor = 0; motor < NUM_MOTORS; ++motor)
+        if (calibration_valid)
         {
-            SerialUSB.print(ZERO_POS[motor]);
-            SerialUSB.print(" ");
-        }
-        SerialUSB.print("\n");
+            SerialUSB.print("<COM> Finished calibration:\n");
 
-        // Print maximum positions
-        SerialUSB.print("      MAX POS: ");
-        for (motor = 0; motor < NUM_MOTORS; ++motor)
+            // Print minimum positions
+            SerialUSB.print("      MIN POS: ");
+            for (motor = 0; motor < NUM_MOTORS; ++motor)
+            {
+                SerialUSB.print(ZERO_POS[motor]);
+                SerialUSB.print(" ");
+            }
+            SerialUSB.print("\n");
+
+            // Print maximum positions
+            SerialUSB.print("      MAX POS: ");
+            for (motor = 0; motor < NUM_MOTORS; ++motor)
+            {
+                SerialUSB.print(END_POS[motor]);
+                SerialUSB.print(" ");
+            }
+            SerialUSB.print("\n");
+
+            // Print CR to end message block
+            SerialUSB.print("\r");
+        }
+
+        else
         {
-            SerialUSB.print(END_POS[motor]);
-            SerialUSB.print(" ");
+            // Print an error message for calibration failure
+            SerialUSB.print("<COM> Failed calibration (using default values).\n");
+            SerialUSB.print("      Please verify that the actuators are powered on.\n\r");
         }
-        SerialUSB.print("\n");
-
-        // Print CR to end message block
-        SerialUSB.print("\r");
     }
     #endif // ENABLE_PRINT
 }

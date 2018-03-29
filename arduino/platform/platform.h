@@ -13,7 +13,8 @@
 #define MIN_PWM 0
 #define MAX_PWM 255
 
-// Platform calibration settings (average analog values at extrema for each actuator)
+// Default platform calibration settings (average analog values at extrema for each actuator)
+#define OFF_THRESHOLD 500  // ignore calibration if motors aren't powered (i.e. large reading difference from default is found)
 int16_t ZERO_POS[NUM_MOTORS]  = { 188, 178, 175, 179, 189, 184 };
 int16_t END_POS[NUM_MOTORS]   = { 847, 830, 839, 841, 830, 839 };
 
@@ -23,8 +24,7 @@ const uint8_t PWM_PINS[NUM_MOTORS] = { PWM_PIN_1, PWM_PIN_2, PWM_PIN_3, PWM_PIN_
 const uint8_t POT_PINS[NUM_MOTORS] = { POT_PIN_1, POT_PIN_2, POT_PIN_3, POT_PIN_4, POT_PIN_5, POT_PIN_6 };
 
 // Movement parameters
-#define POS_THRESHOLD 2      // distance from desired for which position is acceptable (i.e. feedback tolerance)
-#define RESET_DELAY 4000     // at full PWM, the actuator should fully extend/retract by 4s (6" stroke, 2.00"/s)
+#define RESET_DELAY 4000      // at full PWM, the actuator should fully extend/retract by 4s (6" stroke, 2.00"/s)
 typedef enum _MotorDirection  // to clarify the direction in which actuators move
 {
     RETRACT = 0,
@@ -32,16 +32,17 @@ typedef enum _MotorDirection  // to clarify the direction in which actuators mov
 } MotorDirection;
 
 // PID feedback parameters
-#define P_COEFF 5
-#define I_COEFF 0.002
-#define D_COEFF 0.002
+const uint8_t POS_THRESHOLD[NUM_MOTORS] = { 5, 5, 5, 5, 5, 5 };
+const float P_COEFF[NUM_MOTORS]         = { 3, 3, 3, 3, 3, 3 };
+const float I_COEFF[NUM_MOTORS]         = { 0.035, 0.04, 0.035, 0.035, 0.03, 0.03 };
+const float D_COEFF[NUM_MOTORS]         = { 0.025, 0.02, 0.025, 0.025, 0.02, 0.025 };
 
 // Serial configuration parameters
 #define BAUD_RATE 115200  // baud rate for serial port (also needs to be set on host side)
 
 // Serial input parameters
 #define INPUT_TRIGGER 10   // at minimum, 6 numbers + 5 spaces
-#define NUM_READINGS  100  // number of analog readings to average to acquire position
+#define NUM_READINGS  255  // number of analog readings to average to acquire position
 
 // Serial print/output parameters
 // NOTE: feedback measurement settings: PRINT_INTERVAL = 10, ENABLE_PRINT_HEADERS = 0, only PRINT_CURRENT_POS
