@@ -21,6 +21,10 @@ void LeapEventListener::onFrame(const Leap::Controller &controller)
         if (hand.isValid())
         {
             Leap::Vector pos = hand.palmPosition();
+            qreal x = pos.x;
+            qreal y = pos.y;
+            qreal z = pos.z;
+
             qreal pitch = hand.direction().pitch();
             qreal yaw = hand.direction().yaw();
             qreal roll = hand.palmNormal().roll();
@@ -41,6 +45,7 @@ void LeapEventListener::onFrame(const Leap::Controller &controller)
             for (int i = 0; i < StewartPlatform::NUM_ACTUATORS; ++i)
             {
                 QVector4D eff_pos = transform_matrix * END_EFF_POS[i];
+
                 actuator_lengths[i] = static_cast<int>((eff_pos.toVector3D() - BASE_POS[i]).length() - MIN_ACTUATOR_LEN);
             }
             emit LeapFrameUpdate(actuator_lengths);

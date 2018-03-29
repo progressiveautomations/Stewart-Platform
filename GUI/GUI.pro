@@ -52,3 +52,8 @@ macx: LIBS += -L$$(LEAP_SDK)/lib/ -lLeap
 
 INCLUDEPATH += $$(LEAP_SDK)/include
 DEPENDPATH += $$(LEAP_SDK)/include
+
+macx: LIBS += -L$$PWD/../../../../Downloads/LeapDeveloperKit_2.3.1+31549_mac/LeapSDK/lib/ -lLeap
+
+INCLUDEPATH += $$PWD/../../../../Downloads/LeapDeveloperKit_2.3.1+31549_mac/LeapSDK
+DEPENDPATH += $$PWD/../../../../Downloads/LeapDeveloperKit_2.3.1+31549_mac/LeapSDK
