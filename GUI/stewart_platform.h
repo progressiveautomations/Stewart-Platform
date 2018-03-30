@@ -38,13 +38,12 @@ public:
 public slots:
     // Converts actuator_positions vector into a single command string, sends over serial.
     // PRECONDITION: m_serial must be open
-    void SendActuatorPositions(QVector<int> actuator_pos);
+    void sendActuatorPositions(QVector<int> actuator_pos);
     void enableLeapMotion(bool c);
     void onLeapConnected(bool c);
 
 
 private:
-
     // Variables representing platform state
     bool enable_leap;
     QVector<int> actuator_positions;

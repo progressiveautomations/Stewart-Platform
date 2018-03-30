@@ -1,7 +1,8 @@
+#include <QApplication>
+
 #include "stewart_platform.h"
 #include "leap_event_listener.h"
 #include "ui_stewart_platform.h"
-#include <QApplication>
 
 int main(int argc, char *argv[])
 {
