@@ -44,6 +44,8 @@ int32_t reading_sum;                // sum of multiple readings to be averaged f
  */
 void setup()
 {
+    while (!SerialUSB);
+
     // Initialize pins
     for (motor = 0; motor < NUM_MOTORS; ++motor)
     {
