@@ -370,7 +370,7 @@ inline void calibrate()
     }
 
     // Print the calibration result (new max/min values, or a warning)
-    #if ENABLE_PRINT
+    #if ENABLE_PRINT_HEADERS
     {
         if (calibration_valid)
         {

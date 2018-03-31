@@ -32,10 +32,10 @@ typedef enum _MotorDirection  // to clarify the direction in which actuators mov
 } MotorDirection;
 
 // PID feedback parameters
-const uint8_t POS_THRESHOLD[NUM_MOTORS] = { 5, 5, 5, 5, 5, 5 };
+const uint8_t POS_THRESHOLD[NUM_MOTORS] = { 4, 4, 4, 4, 4, 4 };
 const float P_COEFF[NUM_MOTORS]         = { 3, 3, 3, 3, 3, 3 };
-const float I_COEFF[NUM_MOTORS]         = { 0.035, 0.04, 0.035, 0.035, 0.03, 0.03 };
-const float D_COEFF[NUM_MOTORS]         = { 0.025, 0.02, 0.025, 0.025, 0.02, 0.025 };
+const float I_COEFF[NUM_MOTORS]         = { 0.03, 0.035, 0.03, 0.03, 0.03, 0.035 };
+const float D_COEFF[NUM_MOTORS]         = { 0.025, 0.025, 0.025, 0.025, 0.025, 0.025 };
 
 // Serial configuration parameters
 #define BAUD_RATE 115200  // baud rate for serial port (also needs to be set on host side)
@@ -48,7 +48,7 @@ const float D_COEFF[NUM_MOTORS]         = { 0.025, 0.02, 0.025, 0.025, 0.02, 0.0
 // NOTE: feedback measurement settings: PRINT_INTERVAL = 10, ENABLE_PRINT_HEADERS = 0, only PRINT_CURRENT_POS
 #define PRINT_INTERVAL          1000               // minimum time (ms) between printing serial info
 #define ENABLE_PRINT            1                  // flag to enable printing variables (for debugging)
-#define ENABLE_PRINT_HEADERS    1                  // flag to enable variable headers (when not running analysis)
+#define ENABLE_PRINT_HEADERS    ENABLE_PRINT && 1  // flag to enable variable headers (when not running analysis)
 #define PRINT_DESIRED_POS       ENABLE_PRINT && 1  // print desired position values when printing serial info
 #define PRINT_CURRENT_POS       ENABLE_PRINT && 1  // print current position values when printing serial info
 #define PRINT_PWM               ENABLE_PRINT && 1  // print PWM values when printing serial info

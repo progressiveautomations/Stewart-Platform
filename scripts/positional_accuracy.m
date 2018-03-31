@@ -2,24 +2,28 @@
     Measure the positional difference results for the current PID
     configuration. Provides a plot over time of the desired and current
     position values. Requires a serial connection to the Arduino to run.
+
+    Before running, modify the print settings under 'platform.h' and
+    ensure the platform has been successfully reset and calibrated.
 %}
 
 %% Position configuration
-DESIRED_POS = [                                                            % actuator positions in [0, 1024]
-    500
-    500
-    500
-    500
-    500
-    500
-].';
-POS_THRESHOLD = 2;
+DESIRED_POS = 200;                                                         % actuator positions in [0, 1024]
+POS_THRESHOLD = [ 4, 4, 4, 4, 4, 4 ];
 
 %% Feedback configuration (NOTE: manually inputted from Arduino code)
-P = 20;
-I = 0.01;
-D = 0.01;
-pid_str = ['P=' num2str(P) '    I=' num2str(I) '    D=' num2str(D)];
+P = [ 3, 3, 3, 3, 3, 3 ];
+I = [ 0.03, 0.035, 0.03, 0.03, 0.03, 0.035 ];
+D = [ 0.025, 0.025, 0.025, 0.025, 0.025, 0.025 ];
+
+pid_str = {
+    ['P=' num2str(P(1)) '    I=' num2str(I(1)) '    D=' num2str(D(1))]
+    ['P=' num2str(P(2)) '    I=' num2str(I(2)) '    D=' num2str(D(2))]
+    ['P=' num2str(P(3)) '    I=' num2str(I(3)) '    D=' num2str(D(3))]
+    ['P=' num2str(P(4)) '    I=' num2str(I(4)) '    D=' num2str(D(4))]
+    ['P=' num2str(P(5)) '    I=' num2str(I(5)) '    D=' num2str(D(5))]
+    ['P=' num2str(P(6)) '    I=' num2str(I(6)) '    D=' num2str(D(6))]
+};
 
 %% Time configuration
 DURATION = 20;                                                             % time (in s) for the data acquisition to run
@@ -48,7 +52,8 @@ fopen(ser);
 pos = zeros(nt, 6);
 
 % Send desired positions
-fprintf(ser, strjoin([string(DESIRED_POS), '\n']));
+pos_str = num2str(DESIRED_POS);
+fprintf(ser, [strjoin({pos_str, pos_str, pos_str, pos_str, pos_str, pos_str}), '\n']);
 
 % Measure remaining values for the set duration
 for i = 1 : nt
@@ -79,26 +84,22 @@ dy = 10;
 for i = 1 : 6
     subplot(2, 3, i);
     plot(x, pos(:, i), 'r-');
-    axis([0 DURATION (DESIRED_POS(:, i) - dy) (DESIRED_POS(:, i) + dy)]);
-    title(['Actuator ' num2str(i)]);
+    axis([0 DURATION (DESIRED_POS - dy) (DESIRED_POS + dy)]);
+    title({['Actuator ' num2str(i)]; cell2mat(pid_str(i))});
     xlabel('Time (s)');
     ylabel('Position');
-    line([0, nt], [DESIRED_POS(:, i), DESIRED_POS(:, i)], ...
+    line([0, nt], [DESIRED_POS, DESIRED_POS], ...
+         'Color','black', 'LineStyle', '-');
+    line([0, nt], [DESIRED_POS + POS_THRESHOLD(i), DESIRED_POS + POS_THRESHOLD(i)], ...
          'Color','black', 'LineStyle', '--');
-    line([0, nt], [DESIRED_POS(:, i) + POS_THRESHOLD, DESIRED_POS(:, i) + POS_THRESHOLD], ...
-         'Color','black', 'LineStyle', '-');
-    line([0, nt], [DESIRED_POS(:, i) - POS_THRESHOLD, DESIRED_POS(:, i) - POS_THRESHOLD], ...
-         'Color','black', 'LineStyle', '-');
+    line([0, nt], [DESIRED_POS - POS_THRESHOLD(i), DESIRED_POS - POS_THRESHOLD(i)], ...
+         'Color','black', 'LineStyle', '--');
 end
 
-% Set the title for all plots (with PID values)
-suptitle(pid_str);
-
 %% Output results to a CSV file
-csvwrite([pid_str '_' num2str(DURATION) '.csv'], pos);
+csvwrite([datestr(now,'yyyy-mm-dd__HH-MM-SS') '.csv'], pos);
 
 %% End session (clean up serial objects)
-fprintf(ser, strjoin([string([0 0 0 0 0 0]), '\n']));
 fclose(ser);
 delete(ser);
 clear ser;
