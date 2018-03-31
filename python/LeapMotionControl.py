@@ -13,8 +13,8 @@ BAUD_RATE = 115200  # found to be the most stable standard rate to avoid board h
 
 # Platform position matrices and constants
 NUM_ACTUATORS = 6
-HOME_POSITION_HEIGHT = 319.0
-MIN_ACTUATOR_LEN = 335.0
+HOME_POSITION_HEIGHT = 330.0
+MIN_ACTUATOR_LEN = 360.0
 BASE_POS = np.matrix([  # base actuator positions (6 1x3 vectors)
     [-246.34, 86.42, 0],
     [-198.16, 170.38, 0],
@@ -51,7 +51,7 @@ class LeapListener(Leap.Listener):
 
     def on_connect(self, controller):
         print "-I- Connected"
-    
+
     def on_disconnect(self, controller):
         print "-W- Disconnected"
 
@@ -96,7 +96,7 @@ class LeapListener(Leap.Listener):
                         -sin_pitch,
                         0
                     ],
-                    
+
                     [
                         cos_yaw * sin_pitch * sin_roll - sin_yaw * cos_roll,
                         cos_yaw * cos_roll + sin_roll * sin_yaw * sin_pitch,
@@ -110,7 +110,7 @@ class LeapListener(Leap.Listener):
                         cos_pitch * cos_roll,
                         0
                     ],
-                    
+
                     [
                         0,
                         0,

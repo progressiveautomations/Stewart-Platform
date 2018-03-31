@@ -735,15 +735,8 @@
     </property>
     <addaction name="actionSelect_COM_port"/>
    </widget>
-   <widget class="QMenu" name="menuAbout">
-    <property name="title">
-     <string>Help</string>
-    </property>
-    <addaction name="actionAbout"/>
-   </widget>
    <addaction name="menuTest"/>
    <addaction name="menuOptions"/>
-   <addaction name="menuAbout"/>
   </widget>
   <action name="actionAbout">
    <property name="text">

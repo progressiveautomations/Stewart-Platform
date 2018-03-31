@@ -101,7 +101,8 @@ void StewartPlatform::sendActuatorPositions(QVector<int> actuator_pos)
 void StewartPlatform::readSerialData()
 {
     Q_ASSERT(m_serial->isOpen());
-    ui->log->appendPlainText(m_serial->readAll());
+    log(m_serial->readAll());
+//    ui->log->appendPlainText(m_serial->readAll());
 }
 
 void StewartPlatform::writeSerialData(const char* data)

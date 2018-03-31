@@ -46,8 +46,8 @@ private:
         QVector4D(176.25f, -158.75f, 0.0f, 1.0f),
         QVector4D(-176.25f, -158.75f, 0.0f, 1.0f)
     };
-    const qreal HOME_POSITION_HEIGHT = 319.0f;
-    const qreal MIN_ACTUATOR_LEN = 335.0f;
+    const qreal HOME_POSITION_HEIGHT = 330.0f;
+    const qreal MIN_ACTUATOR_LEN = 360.0f;
 };
 
 #endif // LEAP_EVENT_LISTENER_H
