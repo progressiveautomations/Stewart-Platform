@@ -58,12 +58,12 @@ StewartPlatform::StewartPlatform(QWidget *parent) :
     connect(m_serial, &QSerialPort::errorOccurred, this, &StewartPlatform::closeSerialPort);
 
     // Send actuator_positions values over serial
-    connect(ui->button_send, &QPushButton::clicked, this, [=](){this->SendActuatorPositions(this->actuator_positions);});
+    connect(ui->button_send, &QPushButton::clicked, this, [=](){this->sendActuatorPositions(this->actuator_positions);});
 
     /** Leap Motion signals **/
     // Leap Motion checkbox disables actuator box, update leap_enabled variable
     connect(ui->enable_leap_motion, &QCheckBox::toggled, ui->actuatorBox, [=](bool c){enableLeapMotion(c);});
-    connect(leap, &LeapEventListener::LeapFrameUpdate, this, &StewartPlatform::SendActuatorPositions);
+    connect(leap, &LeapEventListener::LeapFrameUpdate, this, &StewartPlatform::sendActuatorPositions);
 }
 
 StewartPlatform::~StewartPlatform()
@@ -82,12 +82,12 @@ void StewartPlatform::on_actionExit_triggered()
     QApplication::quit();
 }
 
-void StewartPlatform::Log(const QString &entry)
+void StewartPlatform::log(const QString& entry)
 {
-    ui->log->appendPlainText(entry + "\n");
+    ui->log->appendPlainText("(" + QTime::currentTime().toString() + ") " + entry);
 }
 
-void StewartPlatform::SendActuatorPositions(QVector<int> actuator_pos)
+void StewartPlatform::sendActuatorPositions(QVector<int> actuator_pos)
 {
     QString s = "";
     for(int i = 0; i < NUM_ACTUATORS; ++i)
@@ -123,19 +123,27 @@ void StewartPlatform::openSerialPort()
     m_serial->setParity(p.parity);
     m_serial->setStopBits(p.stopBits);
     m_serial->setFlowControl(p.flowControl);
+
+    // If able to connect to the port, update the status and enable the send button
+    // Else, produce an error
     if (m_serial->open(QIODevice::ReadWrite))
     {
-        // Update status, enable send button
         ui->label_serial_val->setText(tr("%1").arg(p.name));
         ui->button_send->setEnabled(true);
 
-        Log(tr("Connected to %1 : %2, %3, %4, %5, %6")
-                      .arg(p.name).arg(p.stringBaudRate).arg(p.stringDataBits)
-                      .arg(p.stringParity).arg(p.stringStopBits).arg(p.stringFlowControl));
+        log(
+            tr("<COM>  Connected to %1 : %2, %3, %4, %5, %6")
+                .arg(p.name)
+                .arg(p.stringBaudRate)
+                .arg(p.stringDataBits)
+                .arg(p.stringParity)
+                .arg(p.stringStopBits)
+                .arg(p.stringFlowControl)
+        );
     }
     else
     {
-        QMessageBox::critical(this, tr("Serial Connection Error"), m_serial->errorString());
+        log(tr("<COM>  Connection error: %1").arg(m_serial->errorString()));
     }
 }
 
@@ -144,7 +152,7 @@ void StewartPlatform::closeSerialPort()
     if (m_serial->isOpen())
     {
         m_serial->close();
-        Log(tr("Disconnected from %1").arg(m_serial->portName()));
+        log(tr("<COM>  Disconnected from %1").arg(m_serial->portName()));
 
         // Update status, disable send button
         ui->label_serial_val->setText(tr("Disconnected"));
@@ -158,9 +166,17 @@ void StewartPlatform::enableLeapMotion(bool c)
     leap->is_leap_enabled = c;
 }
 
-void StewartPlatform::onLeapConnected(bool c)
+void StewartPlatform::onLeapConnected(bool connected)
 {
-    // Update connection status
-    ui->label_leap_val->setText((c) ? tr("Connected") : ("Disconnected"));
-    Log((c) ? tr("Leap Motion connected") : tr("Leap Motion disconnected"));
+    if (connected)
+    {
+        ui->label_leap_val->setText(tr("Connected"));
+        log(tr("<LEAP> Connected"));
+
+    }
+    else
+    {
+        ui->label_leap_val->setText(tr("Disconnected"));
+        log(tr("<LEAP> Disconnected"));
+    }
 }

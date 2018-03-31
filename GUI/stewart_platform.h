@@ -2,8 +2,7 @@
 #define STEWART_PLATFORM_H
 
 #include <QMainWindow>
-#include <QMessageBox>
-#include <QMap>
+#include <QTime>
 
 #include "ui_stewart_platform.h"
 #include "ui_serial_settings_dialog.h"
@@ -25,10 +24,10 @@ public:
     ~StewartPlatform();
 
     // Writes string to logging window.
-    void Log(const QString& entry);
+    void log(const QString& entry);
 
     // Constants
-    const static int NUM_ACTUATORS = 6;
+    const static int NUM_ACTUATORS      = 6;
     const static int MIN_ACTUATOR_VALUE = 0;
     const static int MAX_ACTUATOR_VALUE = 1024;
 
