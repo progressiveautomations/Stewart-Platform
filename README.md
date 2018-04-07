@@ -11,7 +11,40 @@
 8. Manually control the actuators by moving the sliders and/or entering values into the corresponding textbox. To enable Leap Motion, ensure its status is "Connected", and tick the "Enable Leap Motion" checkbox above the sliders.
 
 # Assembly Instructions
-Before assembling, ensure that all the wires are adequately connected within the enclosure, including the power supply wires, the actuator power wires, the actuator signal wires, and the Arduino Due wires.
+
+## Wiring the electronics
+
+Before assembly, ensure that all the wires are adequately connected within the enclosure, including the power supply wires, the actuator power wires, the actuator signal wires, and the Arduino Due wires. Detail in [how the components are wired together](electronics/electronics_layout.pdf) and individual schematics are located in the `electronics` folder.
+
+To ensure the code under `arduino/platform` is compatible with the wiring of the Arduino Due, the headers on the PCB should be connected to the respective pins in the table below. This assumes actuators 1 through 3 are connected to Multimoto 1 (to blocks M3, M2, and M1 respectively) and actuators 4 through 6 similarly to Multimoto 2. Note the actuator indexing for the PCBs differs from that in software.
+- The indexing on the PCBs are ordered by the motor blocks on the Multimoto boards. Indices 1 through 4 correspond to M1 through M4 on Multimoto 1, and the same for indices 5 though 8 with Multimoto 2.
+- The indexing in software is ordered by how the signal wires interface with the PCB terminal blocks. This should match the order (left to right) in which they are connected to the enclosure ports.
+
+The UTIL pin headers (RESET, +3.3V, +5V, GND, GND, Vin) are connected to the identically-named Arduino pins and are omitted from this list. The exact pin numbering can be updated in software at `arduino/platform/pin_layout.h` if the wiring configuration needs to be modified.
+
+| Header   | Pin |
+|----------|----:|
+| POT_1    |  A6 |
+| POT_2    |  A7 |
+| POT_3    |  A8 |
+| POT_4    |  A9 |
+| POT_5    | A10 |
+| POT_6    | A11 |
+| DIR_1    |  41 |
+| DIR_2    |  39 |
+| DIR_3    |  37 |
+| DIR_5    |  35 |
+| DIR_6    |  33 |
+| DIR_7    |  31 |
+| PWM_1    |  13 |
+| PWM_2    |  12 |
+| PWM_3    |  11 |
+| PWM_5    |  10 |
+| PWM_6    |   9 |
+| PWM_7    |   8 |
+| ENABLE_1 |  24 |
+| ENABLE_2 |  25 |
+
 
 [Pictures of wiring]
 
