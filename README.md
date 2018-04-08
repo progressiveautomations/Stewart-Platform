@@ -45,48 +45,52 @@ The UTIL pin headers (RESET, +3.3V, +5V, GND, GND, Vin) are connected to the ide
 | ENABLE_1 |  24 |
 | ENABLE_2 |  25 |
 
-
 [Pictures of wiring]
+
+
+## Mechanical Assembly
 
 Attach the 3 platform legs to the 3 corners of the base plate (Note: the base plate is larger than the top plate, and has 4 slots cut into it.), such that the 6 metal flanges are facing upwards. This is done using the ¾” long, ⅜”-16 threaded bolts, with one washer.
 
-[Picture of base leg]
+![Picture of base leg](images/BaseLeg.jpg)
 
 Next, position the enclosure underneath the base, so that the enclosure posts align with the slots in the base plate, with the power and USB connectors facing out as shown.
 
-[Enclosure picture]
+![Enclosure picture](images/EnclosureFront.jpg)
 
 Attach the enclosure to the base place using 4 1” long,  ¼”-20 threaded bolts, with a washer for each. Ensure the bolts are aligned in the slots such that the corners of the enclosure do not extend beyond the edge of the base plates, like shown.
 
-[Enclosure corner]
+![Enclosure corner](images/EnclosureCorner.jpg)
 
 Attach the actuators as shown in the following picture. Close-up views of the joints are provided. Use 2 washers (one on each side), a lock-washer, and a ¼”-28 nut.
 
-[Joint pictures]
+![Joint picture 1](images/BasePlateJoint1.jpg)
+
+![Joint picture 2](images/BasePlateJoint2.jpg)
 
 To avoid problems, ensure that the actuator gearboxes are facing upwards as shown in the picture.
 
-[Picture of actuator positions]
+![Picture of actuator positions](images/ActuatorPositioning.jpg)
 
 Once the platform is assembled, attach the maze to the top plate by aligning the 3 corner holes on each, and secure it with 3 1¼” long, ⅜”-16 threaded bolts, with one washer on each, and a nut.
 
-[Maze bolt pics]
+![Maze bolt pic 1](images/MazeScrewBottom.jpg)
+![Maze bolt pic 2](images/MazeScrewTop.jpg)
 
 Connect all the actuator connectors to the appropriate receptacles on the enclosure, by routing the cables around and under the base plate. These can be bundled to be neat and out-of-view.
 
-[Pic of cables and connectors]
+![Pic of cables and connectors](images/ActuatorOutside.jpg)
 
 Finally, connect the power and USB cables to the front of the enclosure, and connect the other end of the USB cable. The platform is now assembled!
 
-Troubleshooting
-
-Not working? Check all power connectors.
-
-Arduino not seen by computer? Check cables.
 
 # Software Architecture
 
 # Troubleshooting
+
+Not working? Check all power connectors.
+
+Arduino not seen by computer? Check cables.
 
 ## Qt GUI build instructions
 For Leap Motion control with Python: Python 2.7 x64 on Windows/MacOS (NB: for MacOS use version downloaded from python.org), with numpy and pyserial installed.
