@@ -92,7 +92,14 @@ Not working? Check all power connectors.
 
 Arduino not seen by computer? Check cables.
 
+Noisy actuator readings? Adjust the PWM feedback or the filtering capacitances on the Arduino PCB.
+
 ## Qt GUI build instructions
 For Leap Motion control with Python: Python 2.7 x64 on Windows/MacOS (NB: for MacOS use version downloaded from python.org), with numpy and pyserial installed.
 
-For GUI: Qt 5 (5.10.1 recommended), with serialport module in addition to the core libraries
+For GUI: Qt 5 (5.10.1 recommended), with serialport module in addition to the core libraries.
+
+## PCB design
+The PCBs were designed using [KiCAD v4.0.7](http://kicad-pcb.org/).
+
+Each board has its design files under the `electronics` folder, along with Gerber files (under `electronics/gerber`) for the case of reproduction. The individual netlists can be found in the `.sch` files.
