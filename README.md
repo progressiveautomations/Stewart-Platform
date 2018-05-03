@@ -1,5 +1,12 @@
 # Stewart Platform
 
+## Table of Contents
+[Quick Start Guide](#qsg)
+[Wiring the Electronics](#wiring)
+[Mechanical Assembly](#mech)
+[Troubleshooting](#ts)
+
+<a name="qsg"/>
 # Quick Start Guide
 1. Ensure that power to the platform is turned off, the USB cable from the platform is unplugged from the computer, and all GUI instances are closed.
 2. (if Leap Motion is to be used) Ensure that the Leap Motion service and software is started, and the controller is plugged into the computer.
@@ -12,7 +19,8 @@
 
 # Assembly Instructions
 
-## Wiring the electronics
+<a name="wiring"/>
+## Wiring the Electronics
 
 Before assembly, ensure that all the wires are adequately connected within the enclosure, including the power supply wires, the actuator power wires, the actuator signal wires, and the Arduino Due wires. Detail in [how the components are wired together](electronics/electronics_layout.pdf) and individual schematics are located in the `electronics` folder.
 
@@ -45,9 +53,10 @@ The UTIL pin headers (RESET, +3.3V, +5V, GND, GND, Vin) are connected to the ide
 | ENABLE_1 |  24 |
 | ENABLE_2 |  25 |
 
-[Pictures of wiring]
+![Picture of Arduino I/O wiring](images/SignalWiring.jpg)
+![Picture of MultiMoto wiring](images/MultiMotos.jpg)
 
-
+<a name="mech"/>
 ## Mechanical Assembly
 
 Attach the 3 platform legs to the 3 corners of the base plate (Note: the base plate is larger than the top plate, and has 4 slots cut into it.), such that the 6 metal flanges are facing upwards. This is done using the ¾” long, ⅜”-16 threaded bolts, with one washer.
@@ -83,21 +92,15 @@ Connect all the actuator connectors to the appropriate receptacles on the enclos
 
 Finally, connect the power and USB cables to the front of the enclosure, and connect the other end of the USB cable. The platform is now assembled!
 
-
-# Software Architecture
-
+<a name="ts"/>
 # Troubleshooting
 
-Not working? Check all power connectors.
+Nothing is moving? Check all power connectors.
 
-Arduino not seen by computer? Check cables.
+Arduino not seen by computer? Check USB cable connection, and ensure the device shows up in Device Manager.
 
 Noisy actuator readings? Adjust the PWM feedback or the filtering capacitances on the Arduino PCB.
 
-## Qt GUI build instructions
-For Leap Motion control with Python: Python 2.7 x64 on Windows/MacOS (NB: for MacOS use version downloaded from python.org), with numpy and pyserial installed.
-
-For GUI: Qt 5 (5.10.1 recommended), with serialport module in addition to the core libraries.
 
 ## PCB design
 The PCBs were designed using [KiCAD v4.0.7](http://kicad-pcb.org/).
