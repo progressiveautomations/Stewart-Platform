@@ -7,6 +7,7 @@
 [Troubleshooting](#ts)
 
 <a name="qsg"/>
+
 # Quick Start Guide
 1. Ensure that power to the platform is turned off, the USB cable from the platform is unplugged from the computer, and all GUI instances are closed.
 2. (if Leap Motion is to be used) Ensure that the Leap Motion service and software is started, and the controller is plugged into the computer.
@@ -20,6 +21,7 @@
 # Assembly Instructions
 
 <a name="wiring"/>
+
 ## Wiring the Electronics
 
 Before assembly, ensure that all the wires are adequately connected within the enclosure, including the power supply wires, the actuator power wires, the actuator signal wires, and the Arduino Due wires. Detail in [how the components are wired together](electronics/electronics_layout.pdf) and individual schematics are located in the `electronics` folder.
@@ -93,6 +95,7 @@ Connect all the actuator connectors to the appropriate receptacles on the enclos
 Finally, connect the power and USB cables to the front of the enclosure, and connect the other end of the USB cable. The platform is now assembled!
 
 <a name="ts"/>
+
 # Troubleshooting
 
 Nothing is moving? Check all power connectors.
