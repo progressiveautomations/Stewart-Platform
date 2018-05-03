@@ -2,8 +2,11 @@
 
 ## Table of Contents
 [Quick Start Guide](#qsg)
+
 [Wiring the Electronics](#wiring)
+
 [Mechanical Assembly](#mech)
+
 [Troubleshooting](#ts)
 
 <a name="qsg"/>
@@ -59,6 +62,7 @@ The UTIL pin headers (RESET, +3.3V, +5V, GND, GND, Vin) are connected to the ide
 ![Picture of MultiMoto wiring](images/MultiMotos.jpg)
 
 <a name="mech"/>
+
 ## Mechanical Assembly
 
 Attach the 3 platform legs to the 3 corners of the base plate (Note: the base plate is larger than the top plate, and has 4 slots cut into it.), such that the 6 metal flanges are facing upwards. This is done using the ¾” long, ⅜”-16 threaded bolts, with one washer.
