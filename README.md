@@ -108,7 +108,7 @@ Arduino not seen by computer? Check USB cable connection, and ensure the device 
 
 Noisy actuator readings? Adjust the PWM feedback or the filtering capacitances on the Arduino PCB.
 
-
+ 
 ## PCB design
 The PCBs were designed using [KiCAD v4.0.7](http://kicad-pcb.org/).
 
