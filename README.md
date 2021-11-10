@@ -110,6 +110,6 @@ Noisy actuator readings? Adjust the PWM feedback or the filtering capacitances o
 
  
 ## PCB design
-The PCBs were designed using [KiCAD v4.0.7](http://kicad-pcb.org/).
+The PCBs were designed using [KiCAD v4.0.7](http://kicad.org/).
 
 Each board has its design files under the `electronics` folder, along with Gerber files (under `electronics/gerber`) for the case of reproduction. The individual netlists can be found in the `.sch` files.
